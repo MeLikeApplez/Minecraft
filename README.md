@@ -15,7 +15,7 @@ NodeJS is required and MUST BE INSTALLED IN YOUR SYSTEM
 Clone the project
 
 ```bash
-  git clone https://link-to-project
+  git clone https://github.com/MeLikeApplez/Minecraft.git
 ```
 
 Go to the project directory
