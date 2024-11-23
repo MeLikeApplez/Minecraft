@@ -1,6 +1,8 @@
 import Camera from "./Camera/Camera"
 import Chunk from "./Chunks/Chunk"
+import Mesh from "./Mesh/Mesh"
 import Renderer from "./Renderer"
+import Texture2D from "./Texture/Texture2D"
 
 /**
  * @typedef {Object} SceneType
@@ -25,6 +27,21 @@ export default class Scene {
         this.worldChunkSize = 1
 
         this.chunks = []
+        
+        this.loadTextureMap()
+    }
+
+    async loadTextureMap() {
+        Mesh.TEXTURE_MAP_IMG = await Texture2D.loadImage(Texture2D.TEXTURE_MAP_PATH)
+
+        if(Mesh.TEXTURE_MAP_IMG !== null) {
+            for(let i = 0; i < this.chunks.length; i++) {
+                const chunk = this.chunks[i]
+
+                chunk.update(this.gl, this.Renderer.programs.main)
+                chunk.initialized = true
+            }
+        }
     }
 
     /**
@@ -35,7 +52,9 @@ export default class Scene {
 
         this.chunks.push(chunk)
 
-        chunk.update(this.gl, this.Renderer.programs.main)
-        chunk.initialized = true
+        if(Mesh.TEXTURE_MAP_IMG !== null) {
+            chunk.update(this.gl, this.Renderer.programs.main)
+            chunk.initialized = true
+        }
     }
 }

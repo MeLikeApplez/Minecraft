@@ -1,3 +1,4 @@
+import Mesh from "./Mesh/Mesh"
 import Renderer from "./Renderer"
 import Scene from "./Scene"
 
@@ -49,6 +50,7 @@ export default class Engine {
         if(message !== null) {
             console.warn('[Engine]: An Error has occured! Pausing Engine animation...')
             console.error(message)
+            console.trace()
         }
 
         if(this.onError !== null) this.onError(message)

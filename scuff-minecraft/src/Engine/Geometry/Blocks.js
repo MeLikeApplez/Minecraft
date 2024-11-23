@@ -8,6 +8,67 @@ export const BLOCK_LIST =  [
 ]
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Typed_arrays
+export const BLOCK_VERTICES_PX = new Uint8Array([
+    1, 0, 1,
+    1, 1, 1,
+    1, 0, 0,
+    
+    1, 1, 1,
+    1, 1, 0,
+    1, 0, 0,
+    
+])
+
+export const BLOCK_VERTICES_NX = new Uint8Array([
+    0, 0, 0,
+    0, 1, 0,
+    0, 0, 1,
+    
+    0, 1, 0,
+    0, 1, 1,
+    0, 0, 1,
+])
+
+export const BLOCK_VERTICES_PY = new Uint8Array([
+    0, 0, 0,
+    0, 0, 1,
+    1, 0, 0,
+    
+    0, 0, 1,
+    1, 0, 1,
+    1, 0, 0,
+])
+
+export const BLOCK_VERTICES_NY = new Uint8Array([
+    0, 1, 1,
+    0, 1, 0,
+    1, 1, 1,
+    
+    0, 1, 0,
+    1, 1, 0,
+    1, 1, 1,
+])
+
+export const BLOCK_VERTICES_PZ = new Uint8Array([
+    1, 0, 0,
+    1, 1, 0,
+    0, 0, 0,
+    
+    1, 1, 0,
+    0, 1, 0,
+    0, 0, 0,
+])
+
+export const BLOCK_VERTICES_NZ = new Uint8Array([
+    0, 0, 1,
+    0, 1, 1,
+    1, 0, 1,
+    
+    0, 1, 1,
+    1, 1, 1,
+    1, 0, 1,
+])
+
 export const BLOCK_VERTICES = new Uint8Array([
     //  front
     0, 0, 1,

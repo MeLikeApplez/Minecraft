@@ -25,7 +25,7 @@ export default function Playground(canvas, onError) {
     Engine.load()
     
     const { Scene, Renderer } = Engine
-    const camera = new Perspective(75, window.innerWidth / window.innerHeight, 1, 500)
+    const camera = new Perspective(75, window.innerWidth / window.innerHeight, 0.5, 500)
     
     window.onresize = () => Renderer.updateCanvasSize()
     Scene.camera = camera
@@ -40,9 +40,13 @@ export default function Playground(canvas, onError) {
     console.log(chunk)
     Scene.addChunk(chunk)
     
-    camera.position.set(0, 4, 16)
+    camera.position.set(8, 4, 16)
+    // camera.lookAt(new Vector3(0, 0, 0))
+    
+    // camera.position.set(0.5, 0.5, 2)
+    // camera.lookAt(new Vector3(0.5, 0, 0))
 
-    Renderer.wireframe = true
+    // Renderer.wireframe = true
 
     return () => {
         Engine.dispose()

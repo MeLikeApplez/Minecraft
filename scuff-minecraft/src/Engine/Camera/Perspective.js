@@ -37,6 +37,7 @@ export default class Perspective extends Camera {
         this.target.set(target.x, target.y, target.z)
 
         this.rotationMatrix.setFromMatrix4(rotationMatrix)
+        this.rotation.setFromRotationMatrix(this.rotationMatrix)
 
         return this
     }

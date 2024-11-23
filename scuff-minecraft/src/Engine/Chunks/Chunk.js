@@ -1,3 +1,6 @@
+import Mesh from "../Mesh/Mesh"
+import Texture2D from "../Texture/Texture2D"
+
 /**
  * @typedef {Object} ChunkType
  * @property {number} x
@@ -7,6 +10,7 @@
  * @property {number} length
  * @property {Uint8Array} blocks
  * @property {WebGLBuffer | null} transformBuffer
+ * @property {WebGLBuffer | null} textureBuffer
  */
 
 /**
@@ -37,8 +41,14 @@ export default class Chunk {
         this.length = length
 
         this.transformBuffer = null
+        this.textureBuffer = null
+
+        const volume = width * height * length
+
         // bottom to top
-        this.blocks = new Uint8Array(width * height * length * 3)
+        this.blockTypes = new Uint8Array(volume)
+        this.blockPositions = new Uint8Array(volume * 3)
+        this.texturePositions = new Float32Array(Texture2D.POINTS_PER_TRIANGLE_FACE * 2 * volume)
 
         this.initialized = false
 
@@ -51,24 +61,28 @@ export default class Chunk {
      * @param {number} length 
      */
     setChunk(width, height, length) {
+        const volume = width * height * length
         let index = 0
 
         // create new array if size is different
         // just reuse the array if they're the same size
+        // this probably should never happen
         if(width !== this.width || height !== this.height || length !== this.length) {
             this.width = width
             this.height = height
             this.length = length
         
-            this.blocks = new Uint8Array(width * height * length * 3)
+            this.blockTypes = new Uint8Array(volume)
+            this.blockPositions = new Uint8Array(volume * 3)
+            this.texturePositions = new Float32Array(Texture2D.POINTS_PER_TRIANGLE_FACE * 2 * volume)
         }
 
         for(let y = 0; y < height; y++) {
             for(let x = 0; x < width; x ++) {
                 for(let z = 0; z < length; z++) {
-                    this.blocks[index] = x
-                    this.blocks[index + 1] = y
-                    this.blocks[index + 2] = z
+                    this.blockPositions[index] = x
+                    this.blockPositions[index + 1] = y
+                    this.blockPositions[index + 2] = z
 
                     index += 3
                 }
@@ -86,9 +100,48 @@ export default class Chunk {
         if(this.transformBuffer === null) {
             this.transformBuffer = gl.createBuffer()
         }
+
+        if(this.textureBuffer === null) {
+            this.textureBuffer = gl.createBuffer()
+        }
+
+        if(Mesh.TEXTURE_MAP_IMG !== null) {
+            const volume = this.width * this.height * this.length
+            const uvSize = Texture2D.POINTS_PER_TRIANGLE_FACE * 2 * volume
+    
+            const w = Mesh.TEXTURE_MAP_IMG.width / 16
+            const h = Mesh.TEXTURE_MAP_IMG.height / 16
+
+            console.log(Mesh.TEXTURE_MAP_IMG.width)
+
+            // The uvSize has been hard coded
+            // Change this latter to dynamically change to proper size for each block type
+            Texture2D.createUVCoordinates(Texture2D.UV_TRIANGLES, uvSize, this.texturePositions)
+            // sides of a block
+            for(let i = 0; i < 6; i++) {
+                for(let j = 0; j < Texture2D.UV_TRIANGLES.length; j += 2) {
+                    const index = (i * Texture2D.UV_TRIANGLES.length) + j
+    
+                    const u = this.texturePositions[index]
+                    const v = this.texturePositions[index + 1]
+    
+                    // this.texturePositions[index] = (u / w) + ((w - 1) / w)
+                    // this.texturePositions[index + 1] = (1 - v / h) + (15 / h)
+
+                    this.texturePositions[index] = (u / w) + (22/w)
+                    this.texturePositions[index + 1] =  (1 - v / h) + (-11/h)
+    
+                }
+            }
+        }
+
         
         gl.bindBuffer(gl.ARRAY_BUFFER, this.transformBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, this.blocks, gl.STATIC_DRAW)
+        gl.bufferData(gl.ARRAY_BUFFER, this.blockPositions, gl.STATIC_DRAW)
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.textureBuffer)
+        gl.bufferData(gl.ARRAY_BUFFER, this.texturePositions, gl.STATIC_DRAW)
+        
         gl.bindBuffer(gl.ARRAY_BUFFER, null)
 
         return this.transformBuffer
@@ -99,7 +152,7 @@ export default class Chunk {
      * @param {WebGLProgram} program 
      */
     render(gl, program) {
-        if(!this.transformBuffer || !gl || !program) return null
+        if(!(this.initialized && this.transformBuffer && gl && program)) return null
 
         const meshOffsetLocation = gl.getAttribLocation(program, 'meshOffset')
 
@@ -107,11 +160,13 @@ export default class Chunk {
         const stride = rowSize * Uint8Array.BYTES_PER_ELEMENT
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.transformBuffer)
-        // gl.bufferData(gl.ARRAY_BUFFER, this.blocks, gl.STATIC_DRAW)
+        // gl.bufferData(gl.ARRAY_BUFFER, this.blockPositions, gl.STATIC_DRAW)
 
         gl.vertexAttribPointer(meshOffsetLocation, 3, gl.UNSIGNED_BYTE, false, stride, 0)
 
         gl.enableVertexAttribArray(meshOffsetLocation)
         gl.vertexAttribDivisor(meshOffsetLocation, 1)
+    
+        Texture2D.render(gl, program, Mesh.TEXTURE_MAP_IMG, this.textureBuffer, Mesh.TEXTURE_MAP_BUFFER_IMG)
     }
 }

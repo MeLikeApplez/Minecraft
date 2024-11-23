@@ -5,27 +5,6 @@ import Scene from "./Scene"
 import { BLOCK_VERTICES } from './Geometry/Blocks'
 import Mesh from './Mesh/Mesh'
 
-const positions = BLOCK_VERTICES
-const colorData = createColorVertices(3, positions.length, [
-    [255, 0, 0],
-    [255, 0, 0],
-
-    [0, 255, 0],
-    [0, 255, 0],
-
-    [0, 0, 255],
-    [0, 0, 255],
-
-    [255, 0, 255],
-    [255, 0, 255],
-
-    [0, 255, 255],
-    [0, 255, 255],
-
-    [255, 255, 255],
-    [255, 255, 255],
-])
-
 export default class Renderer {
     /**
      * @param {WebGL2RenderingContext} gl 
@@ -42,6 +21,7 @@ export default class Renderer {
         }
 
         this.gl.enable(this.gl.DEPTH_TEST)
+        this.gl.enable(this.gl.CULL_FACE)
 
         this.updateCanvasSize()
     }
@@ -105,6 +85,11 @@ export default class Renderer {
         this.gl.useProgram(this.programs.main)
         this.gl.viewport(0, 0, this.canvasElement.width, this.canvasElement.height)
 
+        this.gl.depthMask(true)
+        this.gl.depthFunc(this.gl.LESS)
+        this.gl.cullFace(this.gl.FRONT)
+        // this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA)
+
         if(scene.camera !== null) {
             scene.camera.update(this.gl, this.programs.main)
 
@@ -115,46 +100,8 @@ export default class Renderer {
 
                 chunk.render(this.gl, this.programs.main)
 
-                this.gl.drawArraysInstanced(glDrawMode, 0, BLOCK_VERTICES.length, chunk.blocks.length)
-            }
-            
-
-            // Mesh.SetGLPosition(this.gl, this.programs.main, 0, 0, 0)
-            // Mesh.SetGLColor(this.gl, this.programs.main, colorData)
-            
-            // Mesh.SetGLInstancedBlock(this.gl, this.programs.main)
-            // Mesh.SetGLInstancedData(this.gl, this.programs.main)
-
-            // this.gl.drawArrays(this.gl.TRIANGLES, 0, positions.length)
+                this.gl.drawArraysInstanced(glDrawMode, 0, BLOCK_VERTICES.length, chunk.blockPositions.length / 3)
+            }            
         }
     }
-}
-
-/**
- * @param {number} pointSize 
- * @param {number} vectorSize 
- * @param {Array<[number, number, number]>} colors 
- */
-function createColorVertices(pointSize, vectorSize, colors) {
-    const vertices = new Uint8Array(Array(vectorSize))
-
-    let faceCount = 0
-    let colorIndex = 0
-    for(let i = 0; i < vectorSize; i += 3) {
-        if(faceCount >= colors.length * 3) {
-            continue
-        }
-
-        vertices[i] = colors[colorIndex][0]
-        vertices[i + 1] = colors[colorIndex][1]
-        vertices[i + 2] = colors[colorIndex][2]
-    
-        faceCount++
-
-        if(faceCount % 3 == 0) {
-            colorIndex++
-        }
-    }
-
-    return vertices
 }

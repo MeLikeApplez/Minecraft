@@ -12,6 +12,8 @@ in vec3 meshOffset;
 
 // texture/color data
 out vec3 fragmentColor;
+in vec2 aTexCoord;
+out vec2 vTexCoord;
 
 // camera data
 uniform vec3 cameraPosition;
@@ -25,4 +27,6 @@ void main() {
 
     fragmentColor = vertexColor;
     gl_Position = finalPosition;
+
+    vTexCoord = aTexCoord;
 }

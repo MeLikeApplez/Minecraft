@@ -1,27 +1,59 @@
 import Color from "../Utils/Color"
 import { BLOCK_VERTICES } from '../Geometry/Blocks'
+import Texture2D from "../Texture/Texture2D"
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Typed_arrays
-export default class Mesh {
-    static BLOCK_BUFFER = null
+export default new class Mesh {
+    constructor() {
+        this.BLOCK_BUFFER = null
+    
+        // https://webgl2fundamentals.org/webgl/lessons/webgl-3d-textures.html
+        this.TEXTURE_MAP_IMG = null
+        this.TEXTURE_MAP_UV = null
+        // this.TEXTURE_MAP_BUFFER_UV = null
+        this.TEXTURE_MAP_BUFFER_IMG = null
+    
+        // Texture2D.loadImage(Texture2D.TEXTURE_MAP_PATH).then(img => {
+        //     this.TEXTURE_MAP_IMG = img
+        // })
+    }
 
     /**
      * @param {WebGL2RenderingContext} gl 
      * @param {WebGLProgram} program 
      */
-    static SetGLInstancedBlock(gl, program) {
+    SetGLInstancedBlock(gl, program) {
         // https://www.youtube.com/watch?v=Ude1zZbf20s
         const vertexAttribLocation = gl.getAttribLocation(program, 'vertexPosition')
-        
+        // same use for texture coordinates
         if(this.BLOCK_BUFFER === null) {
             this.BLOCK_BUFFER = gl.createBuffer()
+            
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.BLOCK_BUFFER)
+            gl.bufferData(gl.ARRAY_BUFFER, BLOCK_VERTICES, gl.STATIC_DRAW)
+        } else {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.BLOCK_BUFFER)
         }
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.BLOCK_BUFFER)
-        gl.bufferData(gl.ARRAY_BUFFER, BLOCK_VERTICES, gl.STATIC_DRAW)
-
+        
         gl.vertexAttribPointer(vertexAttribLocation, 3, gl.UNSIGNED_BYTE, false, 0, 0)
         gl.enableVertexAttribArray(vertexAttribLocation)
+
+        // create and set texture buffer
+        if(this.TEXTURE_MAP_BUFFER_IMG === null) {
+            this.TEXTURE_MAP_BUFFER_IMG = gl.createTexture()
+        } 
+
+        // if(this.TEXTURE_MAP_BUFFER_UV === null) {
+        //     this.TEXTURE_MAP_BUFFER_UV = gl.createBuffer()
+        //     this.TEXTURE_MAP_UV = Texture2D.createUVCoordinates(Texture2D.UV_TRIANGLES, Texture2D.POINTS_PER_TRIANGLE_FACE * 2)
+
+        //     gl.bindBuffer(gl.ARRAY_BUFFER, this.TEXTURE_MAP_BUFFER_UV)
+        //     gl.bufferData(gl.ARRAY_BUFFER, this.TEXTURE_MAP_UV, gl.STATIC_DRAW)
+        // } else {
+        //     gl.bindBuffer(gl.ARRAY_BUFFER, this.TEXTURE_MAP_BUFFER_UV)
+        // }
+
+        // Texture2D.render(gl, program, this.TEXTURE_MAP_IMG, this.TEXTURE_MAP_BUFFER_UV, this.TEXTURE_MAP_BUFFER_IMG)
     }
     
     // https://www.youtube.com/watch?v=Ude1zZbf20s
@@ -29,7 +61,7 @@ export default class Mesh {
      * @param {WebGL2RenderingContext} gl 
      * @param {WebGLProgram} program 
      */
-    static SetGLInstancedData(gl, program) {
+    SetGLInstancedData(gl, program) {
         const meshOffsetLocation = gl.getAttribLocation(program, 'meshOffset')
         const transformBuffer = gl.createBuffer()
         const transformData = new Uint8Array([
@@ -60,7 +92,7 @@ export default class Mesh {
      * @param {number} y 
      * @param {number} z 
      */
-    static SetGLPosition(gl, program, x, y, z) {
+    SetGLPosition(gl, program, x, y, z) {
         const vertexAttribLocation = gl.getAttribLocation(program, 'vertexPosition')
         const positionBuffer = gl.createBuffer()
 
@@ -94,7 +126,7 @@ export default class Mesh {
      * @param {WebGLProgram} program 
      * @param {Array<Color>} colors 
      */
-    static SetGLColor(gl, program, colorData) {
+    SetGLColor(gl, program, colorData) {
         const colorAttribLocation = gl.getAttribLocation(program, 'vertexColor')
         const colorBuffer = gl.createBuffer()
 
@@ -105,7 +137,7 @@ export default class Mesh {
         gl.enableVertexAttribArray(colorAttribLocation)
     }
     
-    static createColorNormalVertices() {
+    createColorNormalVertices() {
 
     }
 
@@ -113,7 +145,7 @@ export default class Mesh {
      * @param {number} vectorSize 
      * @param {Array<Color>} colors 
      */
-    static createColorVertices(vectorSize, colors) {
+    createColorVertices(vectorSize, colors) {
         const vertices = new Uint8Array(Array(vectorSize))
     
         let faceCount = 0
