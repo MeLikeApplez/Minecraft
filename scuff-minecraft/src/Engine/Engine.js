@@ -50,6 +50,7 @@ export default class Engine {
         if(message !== null) {
             console.warn('[Engine]: An Error has occured! Pausing Engine animation...')
             console.error(message)
+
             console.trace()
         }
 
@@ -67,6 +68,8 @@ export default class Engine {
             this.Renderer = new Renderer(this.gl, this.canvasElement)
             this.Scene = new Scene(this.gl, this.Renderer)
 
+            // this.Scene.load()
+
             this._raf = window.requestAnimationFrame(this.animate.bind(this))
         } catch(error) {
             this.ERROR(String(error))
@@ -79,6 +82,7 @@ export default class Engine {
         this.ERROR(null)
 
         window.cancelAnimationFrame(this._raf)
+        this.Scene.dispose()
 
         this._raf = null
         this.fps = 0
@@ -123,7 +127,7 @@ export default class Engine {
             
            if(this.onAnimate !== null) this.onAnimate(this)
        } catch(error) {
-            this.ERROR(String(error))
+            this.ERROR(String(error?.stack || error))
             this.pause()
         }
         

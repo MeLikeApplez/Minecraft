@@ -1,126 +1,45 @@
 // https://www.reddit.com/r/Blockbench/comments/1c1eq92/is_there_any_website_where_i_can_find_basic/
 // https://github.com/Mojang/bedrock-samples
 // https://minecraft.fandom.com/wiki/Blocks.png-atlas
-export const BLOCK_LIST =  [
-    'stone_block',
-    'dirt_block',
-    'grass_block',
-]
 
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Typed_arrays
-export const BLOCK_VERTICES_PX = new Uint8Array([
-    1, 0, 1,
-    1, 1, 1,
-    1, 0, 0,
-    
-    1, 1, 1,
-    1, 1, 0,
-    1, 0, 0,
-    
-])
+import Block from "./Block"
 
-export const BLOCK_VERTICES_NX = new Uint8Array([
-    0, 0, 0,
-    0, 1, 0,
-    0, 0, 1,
-    
-    0, 1, 0,
-    0, 1, 1,
-    0, 0, 1,
-])
+export default class Blocks {
+    // cube order:
+    // front(-z) -> back(+z) ->  bottom(-y) -> top(+y)  -> left(-x) -> right(+x)
+    static LIST = [
+        new Block(
+            'air', Block.TRANSPARENT,
+            [31, 31],
+        ),
+        new Block(
+            'dirt_block', Block.SOLID, 
+            [8, 5],
+        ),
+        new Block(
+            'grass_block', Block.SOLID, 
+            [1, 10, 1, 10, 8, 5, 4, 10, 1, 10, 1, 10],
+        ),
+        new Block(
+            'stone_block', Block.SOLID, 
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ),
+        new Block(
+            'missing_block', Block.SOLID,
+            [31, 17],
+        )
+    ]
 
-export const BLOCK_VERTICES_PY = new Uint8Array([
-    0, 0, 0,
-    0, 0, 1,
-    1, 0, 0,
-    
-    0, 0, 1,
-    1, 0, 1,
-    1, 0, 0,
-])
+    /**
+     * @param {string} name
+     *  @param {boolean} [useMissingBlockFallback=false] 
+     * @returns {Block | null}
+     */
+    static findBlockByName(name, useMissingBlockFallback=false) {
+        const index = BLOCK_LIST.findIndex(b => b.name === name)
 
-export const BLOCK_VERTICES_NY = new Uint8Array([
-    0, 1, 1,
-    0, 1, 0,
-    1, 1, 1,
-    
-    0, 1, 0,
-    1, 1, 0,
-    1, 1, 1,
-])
+        if(index === -1) return useMissingBlockFallback ? BLOCK_LIST[BLOCK_LIST.length - 1] : null
 
-export const BLOCK_VERTICES_PZ = new Uint8Array([
-    1, 0, 0,
-    1, 1, 0,
-    0, 0, 0,
-    
-    1, 1, 0,
-    0, 1, 0,
-    0, 0, 0,
-])
-
-export const BLOCK_VERTICES_NZ = new Uint8Array([
-    0, 0, 1,
-    0, 1, 1,
-    1, 0, 1,
-    
-    0, 1, 1,
-    1, 1, 1,
-    1, 0, 1,
-])
-
-export const BLOCK_VERTICES = new Uint8Array([
-    //  front
-    0, 0, 1,
-    0, 1, 1,
-    1, 0, 1,
-    
-    0, 1, 1,
-    1, 1, 1,
-    1, 0, 1,
-
-    // back
-    1, 0, 0,
-    1, 1, 0,
-    0, 0, 0,
-    
-    1, 1, 0,
-    0, 1, 0,
-    0, 0, 0,
-
-    // top
-    0, 0, 0,
-    0, 0, 1,
-    1, 0, 0,
-    
-    0, 0, 1,
-    1, 0, 1,
-    1, 0, 0,
-
-    // bottom
-    0, 1, 1,
-    0, 1, 0,
-    1, 1, 1,
-    
-    0, 1, 0,
-    1, 1, 0,
-    1, 1, 1,
-
-    // right
-    1, 0, 1,
-    1, 1, 1,
-    1, 0, 0,
-    
-    1, 1, 1,
-    1, 1, 0,
-    1, 0, 0,
-    
-    // left
-    0, 0, 0,
-    0, 1, 0,
-    0, 0, 1,
-    
-    0, 1, 0,
-    0, 1, 1,
-    0, 0, 1,
-])
+        return BLOCK_LIST[index]
+    }
+}

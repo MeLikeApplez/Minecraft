@@ -1,21 +1,18 @@
 import Color from "../Utils/Color"
-import { BLOCK_VERTICES } from '../Geometry/Blocks'
+import Blocks from '../Geometry/Blocks'
 import Texture2D from "../Texture/Texture2D"
+import Block from "../Geometry/Block"
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Typed_arrays
 export default new class Mesh {
     constructor() {
         this.BLOCK_BUFFER = null
+        this.COLOR_BUFFER = null
     
         // https://webgl2fundamentals.org/webgl/lessons/webgl-3d-textures.html
         this.TEXTURE_MAP_IMG = null
         this.TEXTURE_MAP_UV = null
-        // this.TEXTURE_MAP_BUFFER_UV = null
         this.TEXTURE_MAP_BUFFER_IMG = null
-    
-        // Texture2D.loadImage(Texture2D.TEXTURE_MAP_PATH).then(img => {
-        //     this.TEXTURE_MAP_IMG = img
-        // })
     }
 
     /**
@@ -30,7 +27,7 @@ export default new class Mesh {
             this.BLOCK_BUFFER = gl.createBuffer()
             
             gl.bindBuffer(gl.ARRAY_BUFFER, this.BLOCK_BUFFER)
-            gl.bufferData(gl.ARRAY_BUFFER, BLOCK_VERTICES, gl.STATIC_DRAW)
+            gl.bufferData(gl.ARRAY_BUFFER, Block.VERTICES, gl.STATIC_DRAW)
         } else {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.BLOCK_BUFFER)
         }
@@ -42,18 +39,6 @@ export default new class Mesh {
         if(this.TEXTURE_MAP_BUFFER_IMG === null) {
             this.TEXTURE_MAP_BUFFER_IMG = gl.createTexture()
         } 
-
-        // if(this.TEXTURE_MAP_BUFFER_UV === null) {
-        //     this.TEXTURE_MAP_BUFFER_UV = gl.createBuffer()
-        //     this.TEXTURE_MAP_UV = Texture2D.createUVCoordinates(Texture2D.UV_TRIANGLES, Texture2D.POINTS_PER_TRIANGLE_FACE * 2)
-
-        //     gl.bindBuffer(gl.ARRAY_BUFFER, this.TEXTURE_MAP_BUFFER_UV)
-        //     gl.bufferData(gl.ARRAY_BUFFER, this.TEXTURE_MAP_UV, gl.STATIC_DRAW)
-        // } else {
-        //     gl.bindBuffer(gl.ARRAY_BUFFER, this.TEXTURE_MAP_BUFFER_UV)
-        // }
-
-        // Texture2D.render(gl, program, this.TEXTURE_MAP_IMG, this.TEXTURE_MAP_BUFFER_UV, this.TEXTURE_MAP_BUFFER_IMG)
     }
     
     // https://www.youtube.com/watch?v=Ude1zZbf20s

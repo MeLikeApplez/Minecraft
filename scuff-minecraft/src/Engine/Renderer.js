@@ -2,8 +2,9 @@ import vertexSourceCode from './gl/vertex/vertex.glsl?raw'
 import fragmentSourceCode from './gl/fragment/fragment.glsl?raw'
 
 import Scene from "./Scene"
-import { BLOCK_VERTICES } from './Geometry/Blocks'
 import Mesh from './Mesh/Mesh'
+import Block from './Geometry/Block'
+import Texture2D from './Texture/Texture2D'
 
 export default class Renderer {
     /**
@@ -88,20 +89,23 @@ export default class Renderer {
         this.gl.depthMask(true)
         this.gl.depthFunc(this.gl.LESS)
         this.gl.cullFace(this.gl.FRONT)
-        // this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA)
 
-        if(scene.camera !== null) {
+        if(scene.ready && scene.camera !== null) {
             scene.camera.update(this.gl, this.programs.main)
 
-            Mesh.SetGLInstancedBlock(this.gl, this.programs.main)
+            scene.renderInstancedBlock(this.programs.main)
 
             for(let i = 0; i < scene.chunks.length; i++) {
                 const chunk = scene.chunks[i]
 
-                chunk.render(this.gl, this.programs.main)
+                if(!chunk.ready) continue
 
-                this.gl.drawArraysInstanced(glDrawMode, 0, BLOCK_VERTICES.length, chunk.blockPositions.length / 3)
-            }            
+                chunk.render(this.gl, this.programs.main, scene.textureAtlasImg)
+                
+                this.gl.drawArraysInstanced(glDrawMode, 0, Block.VERTICES.length, chunk.blockIds.length)
+            }
+
+            Texture2D.renderBlock(this.gl, this.programs.main, scene.textureAtlasImg, Texture2D.ATLAS_WIDTH, Texture2D.ATLAS_HEIGHT, scene._textureVerticesBuffer, scene._textureImgBuffer)
         }
     }
 }
