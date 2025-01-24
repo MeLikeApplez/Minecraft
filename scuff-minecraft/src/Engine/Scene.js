@@ -1,5 +1,6 @@
 import Chunk from "./Chunks/Chunk"
 import Block from "./Geometry/Block"
+import Vector3 from "./Math/Vector3"
 
 /**
  * @typedef {Object} SceneType
@@ -17,6 +18,8 @@ export default class Scene {
         this.chunkVolume = 0
 
         this.chunks = []
+
+        this.sunPosition = new Vector3(0, 0, 0)
     }
 
     /**

@@ -32,7 +32,7 @@ export default function Playground(canvas, onLoad) {
     const scene = new Scene(canvas)
     const camera = new Perspective(75, window.innerWidth / window.innerHeight, 1, 100)
     // camera.position.set(1.5, 1.5, 1.5)
-    camera.position.set(15.75, 20, 40)
+    camera.position.set(7.5, 20, 20)
 
     window.onresize = () => {
         camera.aspect = window.innerWidth / window.innerHeight
@@ -45,7 +45,7 @@ export default function Playground(canvas, onLoad) {
     canvas.width = canvas.clientWidth
     canvas.height = canvas.clientHeight
 
-    scene.generateChunks(2, 2)
+    scene.generateChunks(1, 1)
 
     console.log(Engine)
     console.log(scene)
@@ -55,6 +55,8 @@ export default function Playground(canvas, onLoad) {
     renderer.load()
     // renderer.update(scene, camera)
     // renderer.wireframe = true
+
+    scene.sunPosition.set(0, 16, 0)
 
     return Engine
 }
@@ -67,7 +69,7 @@ const velocity = new Vector3(0, 0, 0)
  * @param {Camera} camera 
  */
 function PlayerControls(scene, camera) {
-    let speed = Engine.delta * 5
+    let speed = Engine.deltaTime * 5
 
     if(Keyboard.keys.has('w')) {
         velocity.x -= camera.rotationMatrix[8]
@@ -107,8 +109,8 @@ function PlayerControls(scene, camera) {
     if(Keyboard.mouseDown) {
         let { dragX, dragY } = Keyboard.getUpdateDrag()
 
-        dragX *= Engine.delta / (3 * camera.aspect)
-        dragY *= Engine.delta / (3 * camera.aspect)
+        dragX *= Engine.deltaTime / (3 * camera.aspect)
+        dragY *= Engine.deltaTime / (3 * camera.aspect)
 
         if(dragX !== 0) {
             camera.rotation.y += dragX
@@ -125,6 +127,7 @@ function PlayerControls(scene, camera) {
 
 }
 
+let angle = 0
 /**
  * @param {Renderer} renderer 
  * @param {Scene} scene 
@@ -133,6 +136,9 @@ function PlayerControls(scene, camera) {
 function animate(renderer, scene, camera) {
     PlayerControls(scene, camera)
 
+    // scene.sunPosition.x = 10 * Math.cos(angle * 2) - 20
+    // scene.sunPosition.y = 10 * Math.sin(angle * 2) + 20
+    angle += Engine.deltaTime
 
     renderer.update(scene, camera)
 }

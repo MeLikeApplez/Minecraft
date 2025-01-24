@@ -27,7 +27,7 @@ export default new class Engine {
         this._timeNow = 0
 
         this.fps =  0
-        this.delta = 0
+        this.deltaTime = 0
 
         this.onAnimate = null
         this.onLoad = null
@@ -82,7 +82,7 @@ export default new class Engine {
 
         this._raf = null
         this.fps = 0
-        this.delta = 0
+        this.deltaTime = 0
 
         this.gl = null
         this.ready = false
@@ -115,8 +115,8 @@ export default new class Engine {
             return
         }
 
-        this.delta = (timestamp - this._timeNow) / 1000
-        this.fps = 1 / this.delta
+        this.deltaTime = (timestamp - this._timeNow) / 1000
+        this.fps = 1 / this.deltaTime
 
        try {
            if(this.onAnimate !== null) this.onAnimate()

@@ -6,7 +6,9 @@ precision highp float;
 // vertex data
 in int vertexData; // 00NN NXYZ
 flat out int fragVertexData;
+out vec3 fragVertexPosition;
 out vec3 fragVertexNormal;
+out vec3 fragVertexSmoothShadingNormal;
 
 // block data
 in vec3 blockOffset;
@@ -40,11 +42,11 @@ const vec3 NORMALS[6] = vec3[6](
 );
 
 void main() {
-    vec3 vertexPosition = vec3((vertexData >> 2) & 1, (vertexData >> 1) & 1, vertexData & 1)  - cameraPosition + blockOffset;
+    vec3 vertexPosition = vec3((vertexData >> 2) & 1, (vertexData >> 1) & 1, vertexData & 1) ;
     vertexPosition.x += chunkOffset.x;
     vertexPosition.z += chunkOffset.y;
     
-    vec4 finalPosition = vec4(vertexPosition, 0.5) * (cameraRotation * cameraProjection);
+    vec4 finalPosition = vec4(vertexPosition - cameraPosition + blockOffset, 0.5) * (cameraRotation * cameraProjection);
 
     fragVertexData = vertexData;
 
@@ -71,7 +73,11 @@ void main() {
             break;
     }
 
+    fragVertexSmoothShadingNormal = (vertexPosition + blockOffset)* mat3(cameraProjection);
+    // fragVertexNormal = NORMALS[normalId] * mat3(cameraRotation) * mat3(cameraProjection);
     fragVertexNormal = NORMALS[normalId];
+    fragVertexPosition = vertexPosition;
+
     atlasTexCoords = vertexTexCoords;
     gl_Position = finalPosition;
 }

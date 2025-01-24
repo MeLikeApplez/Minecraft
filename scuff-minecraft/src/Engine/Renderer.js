@@ -150,6 +150,10 @@ export default class Renderer {
         this.renderBlockVertices()
         camera.update(this.gl, this.shaders.current.program)
 
+        const sunPositionLocation = this.gl.getUniformLocation(this.shaders.current.program, 'sunPosition')
+
+        this.gl.uniform3f(sunPositionLocation, scene.sunPosition.x, scene.sunPosition.y, -scene.sunPosition.z)
+        
         for(let i = 0; i < scene.chunks.length; i++) {
             const chunk = scene.chunks[i]
             
