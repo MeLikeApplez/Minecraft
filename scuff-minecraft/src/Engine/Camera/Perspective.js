@@ -85,12 +85,12 @@ export default class Perspective extends Camera {
     update(gl, program) {
         const cameraProjectionLocation = gl.getUniformLocation(program, 'cameraProjection')
         const cameraRotationLocation = gl.getUniformLocation(program, 'cameraRotation')
-        const positionLocation = gl.getUniformLocation(program, 'cameraPosition')
-        const viewLocation = gl.getUniformLocation(program, 'viewMatrix')
+        const cameraPositionLocation = gl.getUniformLocation(program, 'cameraPosition')
+        // const viewLocation = gl.getUniformLocation(program, 'viewMatrix')
 
         gl.uniformMatrix4fv(cameraRotationLocation, false, this.rotationMatrix)
         gl.uniformMatrix4fv(cameraProjectionLocation, false, this.projectionMatrix)
-        gl.uniformMatrix4fv(viewLocation, false, this.viewMatrix)
-        gl.uniform3f(positionLocation, this.position.x, this.position.y, this.position.z)
+        // gl.uniformMatrix4fv(viewLocation, false, this.viewMatrix)
+        gl.uniform3f(cameraPositionLocation, this.position.x, this.position.y, this.position.z)
     }
 }

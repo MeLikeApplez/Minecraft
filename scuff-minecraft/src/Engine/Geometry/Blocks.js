@@ -6,7 +6,6 @@ import Block from "./Block"
 
 export default class Blocks {
     // cube order:
-    // front(-z) -> back(+z) ->  bottom(-y) -> top(+y)  -> left(-x) -> right(+x)
     static LIST = [
         new Block(
             'air', Block.TRANSPARENT,
@@ -18,7 +17,7 @@ export default class Blocks {
         ),
         new Block(
             'grass_block', Block.SOLID, 
-            [1, 10, 1, 10, 8, 5, 4, 10, 1, 10, 1, 10],
+            [1, 10, 1, 10, 4, 10, 8, 5, 1, 10, 1, 10],
         ),
         new Block(
             'stone_block', Block.SOLID, 

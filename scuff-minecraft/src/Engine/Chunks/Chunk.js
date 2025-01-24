@@ -1,17 +1,13 @@
 import Blocks from "../Geometry/Blocks"
+import Block from "../Geometry/Block"
 import Vector3 from "../Math/Vector3"
-import Texture2D from "../Texture/Texture2D"
+import Scene from "../Scene"
 
 /**
  * @typedef {Object} ChunkType
- * @property {number} x
- * @property {number} y
- * @property {number} width
- * @property {number} height
- * @property {number} length
- * @property {Uint8Array} blocks
- * @property {WebGLBuffer | null} transformBuffer
- * @property {WebGLBuffer | null} textureBuffer
+ * @property {number} _transformIndexOffset
+ * @property {Uint16Array} _transformData
+ * @property {WebGLBuffer} _transformBuffer
  */
 
 /**
@@ -19,117 +15,150 @@ import Texture2D from "../Texture/Texture2D"
  */
 export default class Chunk {
     static WIDTH = 16
-    static HEIGHT = 16  
+    static HEIGHT = 16
     static LENGTH = 16
+    static VOLUME = this.WIDTH * this.HEIGHT * this.LENGTH
+
+    static _transformRowSize = 15
+    static _transformStride = this._transformRowSize * Uint8Array.BYTES_PER_ELEMENT
     
     /**
      * @param {number} x 
      * @param {number} z
-     * @param {number} [width=Chunk.WIDTH] 
-     * @param {number} [height=Chunk.HEIGHT] 
-     * @param {number} [length=Chunk.LENGTH] 
      */
-    constructor(x, z, width=Chunk.WIDTH, height=Chunk.HEIGHT, length=Chunk.LENGTH) {
-        this.x = x
-        this.z = z
+    constructor(x, z) {
+        this.position = new Vector3(x, 0, z)
 
-        this.width = width
-        this.height = height
-        this.length = length
+        this.blockIds = new Uint8Array(Array(Chunk.VOLUME).fill(2))
 
-        const volume = width * height * length
-        this.blockIds = new Uint8Array(Array(volume).fill(2))
-        this.blockPositions = new Uint8Array(volume * 3)
-        this.textureCoords = new Uint8Array(volume * 2)
-
-        // vec3[1] position + vec2[6] texture
-        this._chunkBufferRowSize = 15
-        this._chunkBufferByteSize = Int8Array.BYTES_PER_ELEMENT
-        this._chunkBuffer = null
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Typed_arrays
+        // vec3[1] + vec2[6]
+        this._transformData = new Uint8Array(Chunk.VOLUME * Chunk._transformRowSize)
+        this._transformBuffer = null
+        this._sceneIndex = -1
 
         this.ready = false
-
-        this.setChunk(width, height, length)
     }
 
-    /**
-     * @param {number} width 
-     * @param {number} height 
-     * @param {number} length 
-     */
-    setChunk(width, height, length) {
-        const volume = width * height * length
-        let index = 0
-
-        if(width !== this.width || height !== this.height || length !== this.length) {
-            this.width = width
-            this.height = height
-            this.length = length
+    dispose() {
         
-            this.blockPositions = new Uint8Array(volume * 3)
-            this.textureCoords = new Uint8Array(volume * 2)
-        }
-
-        for(let y = 0; y < height; y++) {
-            for(let x = 0; x < width; x ++) {
-                for(let z = 0; z < length; z++) {
-                    this.blockPositions[index] = x
-                    this.blockPositions[index + 1] = y
-                    this.blockPositions[index + 2] = z
-
-                    index += 3
-                }
-            }
-        }
     }
 
     /**
-     * @param {number} index 
+     * @param {number} index
+     * @returns {Block?} 
      */
-    getPositionByIndex(index) {
-        return new Vector3(
-            this.blockPositions[index * 3],
-            this.blockPositions[index * 3 + 1],
-            this.blockPositions[index * 3 + 2],
-        )
-    }
+    getBlockByIndex(index) {
+        if(index < 0 || index >= this.blockIds.length) return null
 
-    /**
-     * @param {number} index 
-     */
-    getWorldPositionByIndex(index) {
-        return new Vector3(
-            this.blockPositions[index * 3] + this.x,
-            this.blockPositions[index * 3 + 1],
-            this.blockPositions[index * 3 + 2] + this.z,
-        )
+        return Blocks.LIST[this.blockIds[index]]
     }
 
     /**
      * @param {number} x 
      * @param {number} y 
      * @param {number} z 
+     * @returns {Block?}
+     */
+    getBlockByPosition(x, y, z) {
+        const index = this.getIndexByPosition(x, y, z)
+
+        if(index < 0 || index >= this.blockIds.length) return null
+
+        return Blocks.LIST[this.blockIds[index]]
+    }
+
+    /**
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} z 
+     * @returns {number | -1}
      */
     getIndexByPosition(x, y, z) {
-        return z + (this.length * (x + (this.width * y)))
+        const index = z * (Chunk.WIDTH * Chunk.HEIGHT) + y * Chunk.WIDTH + x
+
+        return (index < 0 || index >= this.blockIds.length) ? -1 : index
     }
 
     /**
-     * @param {number} sceneWidth 
-     * @param {number} sceneLength 
-     * @param {Array<Chunk>} chunks 
+     * @param {number} index 
+     * @returns {Vector3?}
      */
-    cullFaceTexture(sceneWidth, sceneLength, chunks) {
+    getPositionByIndex(index) {
+        if(index < 0 || index >= this.blockIds.length) return null
+
+        return new Vector3(
+            this._transformData[index * Chunk._transformRowSize],
+            this._transformData[index * Chunk._transformRowSize + 1],
+            this._transformData[index * Chunk._transformRowSize + 2],
+        )
+    }
+
+    create() {
+        let offset = 0
+        for(let z = 0; z < Chunk.LENGTH; z++) {
+            for(let y = 0; y < Chunk.HEIGHT; y++) {
+                for(let x = 0; x < Chunk.WIDTH; x++) {
+                    this._transformData[offset] = x
+                    this._transformData[offset + 1] = y
+                    this._transformData[offset + 2] = z
+
+                    offset += Chunk._transformRowSize
+                }
+            }
+        }
+    }
+
+    /**
+     * @param {Scene} scene 
+     */
+    cullFaceTexture(scene) {
+        const pxChunkIndex = this._sceneIndex + 1
+        const nxChunkIndex = this._sceneIndex - 1
+        const pzChunkIndex = this._sceneIndex + scene.chunkLength
+        const nzChunkIndex = this._sceneIndex - scene.chunkLength
+
+        const chunkX = this._sceneIndex % scene.chunkWidth
+        const chunkZ = Math.floor(this._sceneIndex / scene.chunkLength)
         
-    }
+        const pxChunkZ = Math.floor(pxChunkIndex / scene.chunkLength)
+        const nxChunkZ = Math.floor(nxChunkIndex / scene.chunkLength)
+        const pzChunkX = pzChunkIndex % scene.chunkWidth
+        const nzChunkX = nzChunkIndex % scene.chunkWidth
 
-    /**
-     * @param {WebGL2RenderingContext} gl 
-     */
-    dispose(gl) {
-        if(!gl) return
+        const pxIsInBounds = pxChunkIndex >= 0 && pxChunkIndex < scene.chunkVolume
+        const nxIsInBounds = nxChunkIndex >= 0 && nxChunkIndex < scene.chunkVolume
+        const pzIsInBounds = pzChunkIndex >= 0 && pzChunkIndex < scene.chunkVolume
+        const nzIsInBounds = nzChunkIndex >= 0 && nzChunkIndex < scene.chunkVolume
 
-        gl.deleteBuffer(this._chunkBuffer)
+        let index = 0
+        for(let y = 0; y < Chunk.HEIGHT; y++) {
+            for(let x = 0; x < Chunk.WIDTH; x++) {
+                if(pxIsInBounds && chunkZ === pxChunkZ) {
+                    index = this.getIndexByPosition(Chunk.LENGTH - 1, y, x)
+                    
+                    this._transformData[index * Chunk._transformRowSize + 3] |= Block.TEXTURE_HIDE_BUFFER_BIT
+                }
+
+                if(nxIsInBounds && chunkZ === nxChunkZ) {
+                    index = this.getIndexByPosition(0, y, x)
+                    
+                    this._transformData[index * Chunk._transformRowSize + 5] |= Block.TEXTURE_HIDE_BUFFER_BIT
+                }
+
+                if(pzIsInBounds && chunkX === pzChunkX) {
+                    index = this.getIndexByPosition(x, y, Chunk.WIDTH - 1)
+                    
+                    this._transformData[index * Chunk._transformRowSize + 11] |= Block.TEXTURE_HIDE_BUFFER_BIT
+                }
+
+                if(nzIsInBounds && chunkX === nzChunkX) {
+                    index = this.getIndexByPosition(x, y, 0)
+                    
+                    this._transformData[index * Chunk._transformRowSize + 13] |= Block.TEXTURE_HIDE_BUFFER_BIT
+                }
+            }
+        }
     }
 
     /**
@@ -137,102 +166,94 @@ export default class Chunk {
      * @param {WebGLProgram} program 
      */
     update(gl, program) {
-        if(!gl || !program) return
-        
-        if(this._chunkBuffer === null) {
-            this._chunkBuffer = gl.createBuffer()
+        if(this._transformBuffer === null) {
+            this._transformBuffer = gl.createBuffer()
         }
 
-        const transformData = new Int8Array(this._chunkBufferRowSize * this.blockIds.length)
-
-        let positionIndex = 0
         let idIndex = 0
+        for(let i = 0; i < this._transformData.length; i += Chunk._transformRowSize) {
+            const block = this.getBlockByIndex(idIndex)
 
-        for(let i = 0; i < transformData.length; i += this._chunkBufferRowSize) {
-            const blockData = Blocks.LIST[this.blockIds[idIndex]]
+            if(block === null) continue
 
-            transformData[i] = this.blockPositions[positionIndex] + this.x
-            transformData[i + 1] = this.blockPositions[positionIndex + 1]
-            transformData[i + 2] = this.blockPositions[positionIndex + 2] + this.z
+            const texturePosition = block.cullFaceTexture(this, idIndex)
 
-            const texturePosition = blockData.cullFaceTexture(this, idIndex)
+            this._transformData[i + 3] = (this._transformData[i + 3] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[0]
+            this._transformData[i + 4] = (this._transformData[i + 4] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[1]  
 
-            transformData[i + 3] = texturePosition[0]
-            transformData[i + 4] = texturePosition[1]  
+            this._transformData[i + 5] = (this._transformData[i + 5] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[2]  
+            this._transformData[i + 6] = (this._transformData[i + 6] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[3]
 
-            transformData[i + 5] = texturePosition[2]  
-            transformData[i + 6] = texturePosition[3]
+            this._transformData[i + 7] = (this._transformData[i + 7] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[4] 
+            this._transformData[i + 8] = (this._transformData[i + 8] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[5] 
 
-            transformData[i + 7] = texturePosition[4] 
-            transformData[i + 8] = texturePosition[5] 
+            this._transformData[i + 9] = (this._transformData[i + 9] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[6] 
+            this._transformData[i + 10] = (this._transformData[i + 10] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[7] 
 
-            transformData[i + 9] = texturePosition[6] 
-            transformData[i + 10] = texturePosition[7] 
+            this._transformData[i + 11] = (this._transformData[i + 11] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[8] 
+            this._transformData[i + 12] = (this._transformData[i + 12] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[9] 
 
-            transformData[i + 11] = texturePosition[8] 
-            transformData[i + 12] = texturePosition[9] 
+            this._transformData[i + 13] = (this._transformData[i + 13] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[10] 
+            this._transformData[i + 14] = (this._transformData[i + 14] & Block.TEXTURE_HIDE_BUFFER_BIT) | texturePosition[11] 
 
-            transformData[i + 13] = texturePosition[10] 
-            transformData[i + 14] = texturePosition[11] 
-
-            positionIndex +=  3
             idIndex++
         }
 
-        console.log(transformData)
-        
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._chunkBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, transformData, gl.STATIC_DRAW)
+        gl.bindBuffer(gl.ARRAY_BUFFER, this._transformBuffer)
+        gl.bufferData(gl.ARRAY_BUFFER, this._transformData, gl.STATIC_DRAW)
     }
 
     /**
      * @param {WebGL2RenderingContext} gl 
      * @param {WebGLProgram} program 
-     * @param {HTMLImageElement} img 
+     * @param {number} drawMode 
      */
-    render(gl, program, img) {
-        if(!(this.ready && gl && program)) return
+    render(gl, program, drawMode) {
+        if(!this.ready) throw Error('Chunk is not ready loading!')
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._chunkBuffer)
+        const chunkOffsetLocation = gl.getUniformLocation(program, 'chunkOffset')
 
-        const blockOffsetAttribLocation = gl.getAttribLocation(program, 'blockOffset')
+        // uniform[1234][fi][v]() - https://stackoverflow.com/a/31052622/13159492
+        gl.uniform2f(chunkOffsetLocation, this.position.x, this.position.z)
 
-        const faceTextureNZAttribLocation = gl.getAttribLocation(program, 'faceTextureNZ')
-        const faceTexturePZAttribLocation = gl.getAttribLocation(program, 'faceTexturePZ')
+        gl.bindBuffer(gl.ARRAY_BUFFER, this._transformBuffer)
+
+        const blockOffsetLocation = gl.getAttribLocation(program, 'blockOffset')
+
+        const faceTexturePXAttribLocation = gl.getAttribLocation(program, 'faceTexturePX')
+        const faceTextureNXAttribLocation = gl.getAttribLocation(program, 'faceTextureNX')
         const faceTexturePYAttribLocation = gl.getAttribLocation(program, 'faceTexturePY')
         const faceTextureNYAttribLocation = gl.getAttribLocation(program, 'faceTextureNY')
-        const faceTextureNXAttribLocation = gl.getAttribLocation(program, 'faceTextureNX')
-        const faceTexturePXAttribLocation = gl.getAttribLocation(program, 'faceTexturePX')
+        const faceTexturePZAttribLocation = gl.getAttribLocation(program, 'faceTexturePZ')
+        const faceTextureNZAttribLocation = gl.getAttribLocation(program, 'faceTextureNZ')
 
-        const stride = this._chunkBufferRowSize * this._chunkBufferByteSize
+        gl.vertexAttribPointer(blockOffsetLocation, 3, gl.UNSIGNED_BYTE, false, Chunk._transformStride, 0)
 
-        gl.vertexAttribPointer(blockOffsetAttribLocation, 3, gl.BYTE, false, stride, 0)
+        gl.vertexAttribPointer(faceTexturePXAttribLocation, 2, gl.UNSIGNED_BYTE, false, Chunk._transformStride, 3)
+        gl.vertexAttribPointer(faceTextureNXAttribLocation, 2, gl.UNSIGNED_BYTE, false, Chunk._transformStride, 5)
+        gl.vertexAttribPointer(faceTexturePYAttribLocation, 2, gl.UNSIGNED_BYTE, false, Chunk._transformStride, 7)
+        gl.vertexAttribPointer(faceTextureNYAttribLocation, 2, gl.UNSIGNED_BYTE, false, Chunk._transformStride, 9)
+        gl.vertexAttribPointer(faceTexturePZAttribLocation, 2, gl.UNSIGNED_BYTE, false, Chunk._transformStride, 11)
+        gl.vertexAttribPointer(faceTextureNZAttribLocation, 2, gl.UNSIGNED_BYTE, false, Chunk._transformStride, 13)
 
-        gl.vertexAttribPointer(faceTextureNZAttribLocation, 2, gl.BYTE, false, stride, 3)
-        gl.vertexAttribPointer(faceTexturePZAttribLocation, 2, gl.BYTE, false, stride, 5)
-        gl.vertexAttribPointer(faceTexturePYAttribLocation, 2, gl.BYTE, false, stride, 7)
-        gl.vertexAttribPointer(faceTextureNYAttribLocation, 2, gl.BYTE, false, stride, 9)
-        gl.vertexAttribPointer(faceTextureNXAttribLocation, 2, gl.BYTE, false, stride, 11)
-        gl.vertexAttribPointer(faceTexturePXAttribLocation, 2, gl.BYTE, false, stride, 13)
+        gl.vertexAttribDivisor(blockOffsetLocation, 1)
 
-        gl.enableVertexAttribArray(blockOffsetAttribLocation)
-
-        gl.enableVertexAttribArray(faceTextureNZAttribLocation)
-        gl.enableVertexAttribArray(faceTexturePZAttribLocation)
-        gl.enableVertexAttribArray(faceTexturePYAttribLocation)
-        gl.enableVertexAttribArray(faceTextureNYAttribLocation)
-        gl.enableVertexAttribArray(faceTextureNXAttribLocation)
-        gl.enableVertexAttribArray(faceTexturePXAttribLocation)
-        
-        gl.vertexAttribDivisor(blockOffsetAttribLocation, 1)
-
-        gl.vertexAttribDivisor(faceTextureNZAttribLocation, 1)
-        gl.vertexAttribDivisor(faceTexturePZAttribLocation, 1)
+        gl.vertexAttribDivisor(faceTexturePXAttribLocation, 1)
+        gl.vertexAttribDivisor(faceTextureNXAttribLocation, 1)
         gl.vertexAttribDivisor(faceTexturePYAttribLocation, 1)
         gl.vertexAttribDivisor(faceTextureNYAttribLocation, 1)
-        gl.vertexAttribDivisor(faceTextureNXAttribLocation, 1)
-        gl.vertexAttribDivisor(faceTexturePXAttribLocation, 1)
+        gl.vertexAttribDivisor(faceTexturePZAttribLocation, 1)
+        gl.vertexAttribDivisor(faceTextureNZAttribLocation, 1)
+        
+        gl.enableVertexAttribArray(blockOffsetLocation)
 
+        gl.enableVertexAttribArray(faceTexturePXAttribLocation)
+        gl.enableVertexAttribArray(faceTextureNXAttribLocation)
+        gl.enableVertexAttribArray(faceTexturePYAttribLocation)
+        gl.enableVertexAttribArray(faceTextureNYAttribLocation)
+        gl.enableVertexAttribArray(faceTexturePZAttribLocation)
+        gl.enableVertexAttribArray(faceTextureNZAttribLocation)
 
+        gl.drawArraysInstanced(drawMode, 0, Block.VERTICES.length, Chunk.VOLUME)
     }
 }

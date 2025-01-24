@@ -6,8 +6,6 @@ import Scene from "./Scene"
  * @typedef {Object} EngineType
  * @property {HTMLCanvasElement} canvasElement
  * @property {WebGL2RenderingContext} gl
- * @property {Scene} Scene
- * @property {Renderer} Renderer
  * @property {Number} _raf
  * @property {Number} _timeNow
  * @property {Number} fps
@@ -20,16 +18,10 @@ import Scene from "./Scene"
 /**
  * @type {EngineType}
  */
-export default class Engine {
-    /**
-     * @param {HTMLCanvasElement} canvasElement 
-     */
-    constructor(canvasElement) {
-        this.canvasElement = canvasElement
+export default new class Engine {
+    constructor() {
+        this.canvasElement = null
         this.gl = null
-
-        this.Scene = null
-        this.Renderer = null
 
         this._raf = null
         this._timeNow = 0
@@ -38,6 +30,7 @@ export default class Engine {
         this.delta = 0
 
         this.onAnimate = null
+        this.onLoad = null
         this.onError = null
 
         this.ready = false
@@ -59,18 +52,22 @@ export default class Engine {
         this.ready = false
     }
 
-    load() {
+    /**
+     * @param {HTMLCanvasElement} canvasElement 
+     */
+    load(canvasElement) {
+        this.canvasElement = canvasElement
+
+        if(!(canvasElement instanceof HTMLCanvasElement)) return this.ERROR('Canvas Element required!')
+
         this.gl = this.canvasElement.getContext('webgl2')
 
         if(!this.gl) return this.ERROR('Your device does not support webgl2!')
 
         try {
-            this.Renderer = new Renderer(this.gl, this.canvasElement)
-            this.Scene = new Scene(this.gl, this.Renderer)
-
-            // this.Scene.load()
-
             this._raf = window.requestAnimationFrame(this.animate.bind(this))
+
+            if(this.onLoad !== null) this.onLoad(this)
         } catch(error) {
             this.ERROR(String(error))
         }
@@ -82,7 +79,6 @@ export default class Engine {
         this.ERROR(null)
 
         window.cancelAnimationFrame(this._raf)
-        this.Scene.dispose()
 
         this._raf = null
         this.fps = 0
@@ -123,9 +119,7 @@ export default class Engine {
         this.fps = 1 / this.delta
 
        try {
-           this.Renderer.update(this.Scene)
-            
-           if(this.onAnimate !== null) this.onAnimate(this)
+           if(this.onAnimate !== null) this.onAnimate()
        } catch(error) {
             this.ERROR(String(error?.stack || error))
             this.pause()

@@ -1,72 +1,72 @@
 import Perspective from "../Engine/Camera/Perspective"
-import _Engine from "../Engine/Engine"
+import Engine from "../Engine/Engine"
 import Vector3 from "../Engine/Math/Vector3"
 
 import KeyboardControls from "../Engine/Controls/Keyboard"
 import Chunk from "../Engine/Chunks/Chunk"
+import Texture2D from "../Engine/Texture/Texture2D"
+import Scene from "../Engine/Scene"
+import Renderer from "../Engine/Renderer"
+import Camera from "../Engine/Camera/Camera"
 
 const Keyboard = new KeyboardControls()
 
 /**
  * @param {HTMLCanvasElement} canvas 
- * @param {function?} onError 
  */
-export default function Playground(canvas, onError) {
+export default function Playground(canvas, onLoad) {
     console.clear()
     console.log('%c[Reloading]', 'color: rgb(250, 200, 10);')
-    const Engine = new _Engine(canvas)
 
     window.Keyboard = Keyboard
     window.Engine = Engine
 
     Keyboard.load(canvas)
-    Engine.onError = onError
-    Engine.onAnimate = animate
-
-    Engine.load()
+    Engine.onAnimate = () => animate(renderer, scene, camera)
+    Engine.onLoad = onLoad
     
-    const { Scene, Renderer } = Engine
+    const renderer = new Renderer({
+        canvasElement: canvas,
+        antialias: false
+    })
+    const scene = new Scene(canvas)
     const camera = new Perspective(75, window.innerWidth / window.innerHeight, 1, 100)
+    // camera.position.set(1.5, 1.5, 1.5)
+    camera.position.set(15.75, 20, 40)
 
-    window.onresize = () => Renderer.updateCanvasSize()
-    Scene.camera = camera
-    
+    window.onresize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+
+        canvas.width = canvas.clientWidth
+        canvas.height = canvas.clientHeight
+    }
+
+    canvas.width = canvas.clientWidth
+    canvas.height = canvas.clientHeight
+
+    scene.generateChunks(2, 2)
+
     console.log(Engine)
-    console.log(Scene)
-
-
-
-    const chunk1 = new Chunk(0, 0)
-    const chunk2 = new Chunk(0, 16)
-
-    console.log(chunk1)
-    Scene.addChunk(chunk1)
-    Scene.addChunk(chunk2)
+    console.log(scene)
+    console.log(renderer)
     
-    camera.position.set(8, 4, 20)
-    // camera.position.set(8, 4, 16)
-    // camera.lookAt(new Vector3(0, 0, 0))
-    
-    // camera.position.set(0.5, 0.5, 2)
-    // camera.lookAt(new Vector3(0.5, 0, 0))
+    Engine.load(canvas)
+    renderer.load()
+    // renderer.update(scene, camera)
+    // renderer.wireframe = true
 
-    // Renderer.wireframe = true
-    
-    Scene.load()
-
-    return Engine.dispose.bind(Engine)
+    return Engine
 }
 
 const HALF_PI = Math.PI / 2
 const velocity = new Vector3(0, 0, 0)
 
 /**
- * @param {_Engine} Engine 
+ * @param {Scene} scene 
+ * @param {Camera} camera 
  */
-function PlayerControls(Engine) {
-    const { Scene } = Engine
-    const camera = Scene.camera
-
+function PlayerControls(scene, camera) {
     let speed = Engine.delta * 5
 
     if(Keyboard.keys.has('w')) {
@@ -107,8 +107,8 @@ function PlayerControls(Engine) {
     if(Keyboard.mouseDown) {
         let { dragX, dragY } = Keyboard.getUpdateDrag()
 
-        dragX *= Engine.delta / 3
-        dragY *= Engine.delta / 3
+        dragX *= Engine.delta / (3 * camera.aspect)
+        dragY *= Engine.delta / (3 * camera.aspect)
 
         if(dragX !== 0) {
             camera.rotation.y += dragX
@@ -126,10 +126,14 @@ function PlayerControls(Engine) {
 }
 
 /**
- * @param {_Engine} Engine 
+ * @param {Renderer} renderer 
+ * @param {Scene} scene 
+ * @param {Camera} camera 
  */
-function animate(Engine) {
-    PlayerControls(Engine)
+function animate(renderer, scene, camera) {
+    PlayerControls(scene, camera)
 
-    
+
+    renderer.update(scene, camera)
 }
+
