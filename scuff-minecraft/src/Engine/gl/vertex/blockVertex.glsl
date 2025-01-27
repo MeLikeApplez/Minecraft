@@ -7,8 +7,8 @@ precision highp float;
 in int vertexData; // 00NN NXYZ
 flat out int fragVertexData;
 out vec3 fragVertexPosition;
+out vec3 fragVertexFaceNormal;
 out vec3 fragVertexNormal;
-out vec3 fragVertexSmoothShadingNormal;
 
 // block data
 in vec3 blockOffset;
@@ -73,8 +73,7 @@ void main() {
             break;
     }
 
-    fragVertexSmoothShadingNormal = (vertexPosition + blockOffset)* mat3(cameraProjection);
-    // fragVertexNormal = NORMALS[normalId] * mat3(cameraRotation) * mat3(cameraProjection);
+    fragVertexFaceNormal = normalize((vertexPosition + blockOffset) * mat3(cameraProjection));
     fragVertexNormal = NORMALS[normalId];
     fragVertexPosition = vertexPosition;
 

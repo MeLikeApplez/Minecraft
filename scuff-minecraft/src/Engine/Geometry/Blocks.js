@@ -21,7 +21,7 @@ export default class Blocks {
         ),
         new Block(
             'stone_block', Block.SOLID, 
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [19, 7],
         ),
         new Block(
             'missing_block', Block.SOLID,

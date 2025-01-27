@@ -15,7 +15,7 @@ import Scene from "../Scene"
  */
 export default class Chunk {
     static WIDTH = 16
-    static HEIGHT = 16
+    static HEIGHT = 1
     static LENGTH = 16
     static VOLUME = this.WIDTH * this.HEIGHT * this.LENGTH
 
@@ -29,7 +29,7 @@ export default class Chunk {
     constructor(x, z) {
         this.position = new Vector3(x, 0, z)
 
-        this.blockIds = new Uint8Array(Array(Chunk.VOLUME).fill(2))
+        this.blockIds = new Uint8Array(Array(Chunk.VOLUME).fill(1))
 
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Typed_arrays
         // vec3[1] + vec2[6]

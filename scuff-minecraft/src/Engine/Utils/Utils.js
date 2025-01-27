@@ -32,3 +32,12 @@ export function createUVCoordinates(positions, size, floatArray=null) {
 
     return uv
 }
+
+/**
+ * @param {number} min 
+ * @param {number} value 
+ * @param {number} max 
+ */
+export function clamp(min, value, max) {
+    return (value < min ? min : (value > max ? max : value))
+}
