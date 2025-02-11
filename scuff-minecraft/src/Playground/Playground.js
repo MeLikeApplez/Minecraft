@@ -32,7 +32,8 @@ export default function Playground(canvas, onLoad) {
     const scene = new Scene(canvas)
     const camera = new Perspective(75, window.innerWidth / window.innerHeight, 1, 100)
     // camera.position.set(1.5, 1.5, 1.5)
-    camera.position.set(30, 10, 60)
+    // camera.position.set(30, 10, 60)
+    camera.position.set(10, 20, 60)
 
     window.onresize = () => {
         camera.aspect = window.innerWidth / window.innerHeight
@@ -47,8 +48,10 @@ export default function Playground(canvas, onLoad) {
 
     // scene.generateFilledChunks(1, 1)
     scene.generateSimplexNoiseChunks({
-        seed: 'seed',
-        width: 8, length: 8,
+        // seed: 'seed',
+        width: 4, length: 4,
+        amplitude: 3,
+        frequency: 0.03
     })
 
     console.log(Engine)
@@ -73,7 +76,7 @@ const velocity = new Vector3(0, 0, 0)
  * @param {Camera} camera 
  */
 function PlayerControls(scene, camera) {
-    let speed = Engine.deltaTime * 5
+    let speed = Engine.deltaTime * 10
 
     if(Keyboard.keys.has('w')) {
         velocity.x -= camera.rotationMatrix[8]

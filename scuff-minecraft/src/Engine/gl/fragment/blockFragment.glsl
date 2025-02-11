@@ -37,8 +37,8 @@ void main() {
     // float brightness = max(dot(fragVertexFaceNormal, normalize(sunPosition)), 0.0);
     float brightness = max(dot(fragVertexNormal, normalize(sunPosition)), 0.0);
 
-    // outputTexture.rgb = (outputTexture.rgb * 0.4) + (outputTexture.rgb * brightness * 0.6);
-    outputTexture.rgb = (outputTexture.rgb * 0.3) + (outputTexture.rgb * brightness * 0.7);
+    // outputTexture.rgb = (outputTexture.rgb * 0.0) + (outputTexture.rgb * brightness * 0.9);
+    outputTexture.rgb = (outputTexture.rgb * 0.5) + (outputTexture.rgb * brightness * 0.5);
 
     
     outputColor = outputTexture;

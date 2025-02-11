@@ -1,6 +1,6 @@
 // https://www.reddit.com/r/Blockbench/comments/1c1eq92/is_there_any_website_where_i_can_find_basic/
 // https://github.com/Mojang/bedrock-samples
-// https://minecraft.fandom.com/wiki/Blocks.png-atlas
+// https://minecraft.wiki/w/Textures-atlas
 
 import Block from "./Block"
 
@@ -17,7 +17,7 @@ export default class Blocks {
         ),
         new Block(
             'grass_block', Block.SOLID, 
-            [1, 10, 1, 10, 4, 10, 8, 5, 1, 10, 1, 10],
+            [1, 10, 1, 10, 0, 18, 8, 5, 1, 10, 1, 10],
         ),
         new Block(
             'stone_block', Block.SOLID, 

@@ -50,6 +50,8 @@ export default class Scene {
         this.chunkLength = length
         this.chunkVolume = width * length
 
+        seed = typeof seed !== 'string' ? Math.floor(Math.random() * 4294967297 - 2147483648).toString() : seed
+
         let index = 0
         for(let z = 0; z < length; z++) {
             for(let x = 0; x < width; x++) {
@@ -57,18 +59,22 @@ export default class Scene {
                 const offsetZ = z * Chunk.LENGTH
                 
                 const chunk = new Chunk(offsetX, offsetZ)
-                const heightMap = ChunkGenerator.GenerateSimplexNoise(seed, offsetX, offsetZ, amplitude, frequency)
                 
-                let heightMapIndex = 0
+
+                ChunkGenerator.GenerateSimplexNoise(seed, chunk, offsetX, offsetZ, amplitude, frequency)
+
+                // const heightMap = ChunkGenerator.GenerateSimplexNoise(seed, offsetX, offsetZ, amplitude, frequency)
+                
+                // let heightMapIndex = 0
 
                 chunk._sceneIndex = index
                 chunk.create()
     
-                for(let j = 0; j < Chunk.VOLUME; j++) {
-                    chunk._transformData[j * Chunk._transformRowSize + 1] = heightMap[heightMapIndex]
+                // for(let j = 0; j < Chunk.VOLUME; j++) {
+                //     chunk._transformData[j * Chunk._transformRowSize + 1] = heightMap[heightMapIndex]
     
-                    heightMapIndex++
-                }
+                //     heightMapIndex++
+                // }
     
                 // chunk culling is broken
                 // chunk.cullFaceTexture(this)

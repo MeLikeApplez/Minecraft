@@ -15,7 +15,7 @@ import Scene from "../Scene"
  */
 export default class Chunk {
     static WIDTH = 16
-    static HEIGHT = 1
+    static HEIGHT = 16
     static LENGTH = 16
     static VOLUME = this.WIDTH * this.HEIGHT * this.LENGTH
 
