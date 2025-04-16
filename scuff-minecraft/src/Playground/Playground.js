@@ -32,8 +32,8 @@ export default function Playground(canvas, onLoad) {
     const scene = new Scene(canvas)
     const camera = new Perspective(75, window.innerWidth / window.innerHeight, 1, 100)
     // camera.position.set(1.5, 1.5, 1.5)
-    // camera.position.set(30, 10, 60)
-    camera.position.set(10, 20, 60)
+    // camera.position.set(10, 20, 60)
+    camera.position.set(10, 20, 25)
 
     window.onresize = () => {
         camera.aspect = window.innerWidth / window.innerHeight
@@ -48,8 +48,8 @@ export default function Playground(canvas, onLoad) {
 
     // scene.generateFilledChunks(1, 1)
     scene.generateSimplexNoiseChunks({
-        // seed: 'seed',
-        width: 4, length: 4,
+        seed: 'seed',
+        width: 4, length: 4, // width = length must be set!
         amplitude: 3,
         frequency: 0.03
     })

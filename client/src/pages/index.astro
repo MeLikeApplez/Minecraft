@@ -1,0 +1,24 @@
+---
+import './index.scss'
+
+---
+
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Scuffed Minecraft</title>
+		<link rel="shortcut icon" href="/grass_block.webp" type="image/x-icon">
+	</head>
+	<body>
+		<canvas class="gl"></canvas>
+		<script>
+			import main from '../components/main.ts'
+		
+			const canvas = document.querySelector('canvas.gl') as HTMLCanvasElement
+			
+			if(canvas.getContext('webgl2') === null) throw Error('WebGL2 is unable. Your browser or machine may not support it.')
+
+			main(canvas)
+		</script>
+	</body>
+</html>

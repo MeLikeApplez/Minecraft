@@ -1,0 +1,18 @@
+{
+  "name": "client",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev --host",
+    "build": "astro build",
+    "preview": "astro preview --host",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "alea": "^1.0.1",
+    "astro": "^5.6.1",
+    "client": "file:",
+    "sass": "^1.86.3",
+    "simplex-noise": "^4.0.3"
+  }
+}

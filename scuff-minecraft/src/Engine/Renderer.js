@@ -1,6 +1,9 @@
 import blockVertexCode from './gl/vertex/blockVertex.glsl?raw'
 import blockFragmentCode from './gl/fragment/blockFragment.glsl?raw'
 
+import skyboxVertexCode from './gl/vertex/SkyboxVertex.glsl?raw'
+import skyboxFragmentCode from './gl/fragment/SkyboxFragment.glsl?raw'
+
 import Camera from "./Camera/Camera"
 import Scene from "./Scene"
 import Shader from "./Shader"
@@ -30,7 +33,8 @@ export default class Renderer {
 
         this.shaders = {
             current: null,
-            default: new Shader('default', this.gl, blockVertexCode, blockFragmentCode)
+            default: new Shader('default', this.gl, blockVertexCode, blockFragmentCode),
+            skybox: new Shader('skybox', this.gl, skyboxVertexCode, skyboxFragmentCode),
         }
 
         this._textureAtlasImg = new Image()
@@ -142,6 +146,16 @@ export default class Renderer {
         // this.gl.useProgram(this.shaders.current.program)
         this.gl.viewport(0, 0, this.canvasElement.width, this.canvasElement.height)
 
+        this.gl.useProgram(this.shaders.skybox.program)
+
+        this.gl.depthMask(false)
+        this.gl.depthFunc(this.gl.LEQUAL)
+        this.gl.cullFace(this.gl.BACK)
+        
+        scene.sky.render(this.gl, this.shaders.skybox.program, camera)
+        
+        this.gl.useProgram(this.shaders.current.program)
+
         this.gl.depthMask(true)
         this.gl.depthFunc(this.gl.LESS)
         this.gl.cullFace(this.gl.FRONT)
@@ -153,8 +167,8 @@ export default class Renderer {
         const sunPositionLocation = this.gl.getUniformLocation(this.shaders.current.program, 'sunPosition')
 
         this.gl.uniform3f(sunPositionLocation, scene.sunPosition.x, scene.sunPosition.y, -scene.sunPosition.z)
-        
         for(let i = 0; i < scene.chunks.length; i++) {
+            // break
             const chunk = scene.chunks[i]
             
             if(chunk.ready) {

@@ -21,7 +21,7 @@ Clone the project
 Go to the project directory
 
 ```bash
-  cd ./Minecraft/scuff-minecraft
+  cd ./Minecraft/client
 ```
 
 Install dependencies

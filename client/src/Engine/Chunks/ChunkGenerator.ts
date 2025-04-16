@@ -2,21 +2,13 @@
 import { createNoise2D, createNoise3D } from 'simplex-noise'
 import alea from 'alea'
 import Chunk from './Chunk.js'
-import { clamp } from '../Utils/Utils.js'
+import { clamp } from '../../DistortionGL/Math/MathUtils.js'
 
 export default class ChunkGenerator {
-    /**
-     * @param {string?} seed 
-     * @param {Chunk} chunk 
-     * @param {number} offsetX
-     * @param {number} offsetZ
-     * @param {number} amplitude
-     * @param {number} frequency  
-     */
-   static GenerateSimplexNoise(seed, chunk, offsetX, offsetZ, amplitude=3, frequency=0.03) {
-        seed = typeof seed !== 'string' ? undefined : alea(seed)
-        const noise3D = createNoise3D(seed)
-        const noise2D = createNoise2D(seed)
+   static GenerateSimplexNoise(seed: string | null, chunk: Chunk, offsetX: number, offsetZ: number, amplitude=3, frequency=0.03) {
+        const generatedSeed = typeof seed !== 'string' ? undefined : alea(seed)
+        const noise3D = createNoise3D(generatedSeed)
+        const noise2D = createNoise2D(generatedSeed)
 
         let index = 0
         for(let z = 0; z < Chunk.LENGTH; z++) {

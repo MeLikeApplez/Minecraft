@@ -5,6 +5,7 @@ import Block from "./Geometry/Block"
 import Vector3 from "./Math/Vector3"
 import Vector2 from './Math/Vector2'
 import ChunkGenerator from './Chunks/ChunkGenerator.js'
+import Skybox from './Skybox.js'
 
 /**
  * @typedef {Object} SceneType
@@ -21,9 +22,11 @@ export default class Scene {
         this.chunkWidth = 0
         this.chunkLength = 0
         this.chunkVolume = 0
+        // this.center = new Vector3(0, 0, 0)
 
         this.chunks = []
 
+        this.sky = new Skybox(this)
         this.sunPosition = new Vector3(0, 0, 0)
     }
 
@@ -34,6 +37,65 @@ export default class Scene {
         for(let i = 0; i < chunks.length; i++) {
             this.chunks.push(chunks[i])
         }
+    }
+
+    /**
+     * @param {Vector3} worldSpacePosition
+     * @returns {{
+     *      px: Chunk | null,
+     *      nx: Chunk | null,
+     *     pz: Chunk | null,
+     *     nz: Chunk | null,
+     * }}
+     */
+    getNeighboringChunks(worldSpacePosition) {
+        let px = null
+        let nx = null
+        let pz = null
+        let nz = null
+        let index = -1
+
+        const chunkX = Math.round(worldSpacePosition.x / Chunk.WIDTH)
+        const chunkZ = Math.round(worldSpacePosition.z / Chunk.LENGTH)
+
+        if(chunkX < this.chunkWidth && chunkZ < this.chunkLength) {
+            index = chunkZ * this.chunkLength + chunkX
+        } else {
+            return { px, nx, pz, nz }
+        }
+
+        const pxChunkIndex = index + 1
+        const nxChunkIndex = index - 1
+        const pzChunkIndex = index + this.chunkLength
+        const nzChunkIndex = index - this.chunkLength
+        
+        const pxChunkZ = Math.floor(pxChunkIndex / this.chunkLength)
+        const nxChunkZ = Math.floor(nxChunkIndex / this.chunkLength)
+        const pzChunkX = pzChunkIndex % this.chunkWidth
+        const nzChunkX = nzChunkIndex % this.chunkWidth
+
+        const pxIsInBounds = (pxChunkIndex >= 0) && (pxChunkIndex < this.chunkVolume) && (chunkZ === pxChunkZ)
+        const nxIsInBounds = (nxChunkIndex >= 0) && (nxChunkIndex < this.chunkVolume) && (chunkZ === nxChunkZ)
+        const pzIsInBounds = (pzChunkIndex >= 0) && (pzChunkIndex < this.chunkVolume) && (chunkX === pzChunkX)
+        const nzIsInBounds = (nzChunkIndex >= 0) && (nzChunkIndex < this.chunkVolume) && (chunkX === nzChunkX)
+
+        if(pxIsInBounds) {
+            px = this.chunks[pxChunkIndex]    
+        }
+        
+        if(nxIsInBounds) {
+            nx = this.chunks[nxChunkIndex]    
+        }
+
+        if(pzIsInBounds) {
+            pz = this.chunks[pzChunkIndex]    
+        }
+
+        if(nzIsInBounds) {
+            nz = this.chunks[nzChunkIndex]    
+        }
+
+        return { px, nx, pz, nz }
     }
 
     /**
@@ -59,30 +121,21 @@ export default class Scene {
                 const offsetZ = z * Chunk.LENGTH
                 
                 const chunk = new Chunk(offsetX, offsetZ)
-                
 
                 ChunkGenerator.GenerateSimplexNoise(seed, chunk, offsetX, offsetZ, amplitude, frequency)
-
-                // const heightMap = ChunkGenerator.GenerateSimplexNoise(seed, offsetX, offsetZ, amplitude, frequency)
-                
-                // let heightMapIndex = 0
 
                 chunk._sceneIndex = index
                 chunk.create()
     
-                // for(let j = 0; j < Chunk.VOLUME; j++) {
-                //     chunk._transformData[j * Chunk._transformRowSize + 1] = heightMap[heightMapIndex]
-    
-                //     heightMapIndex++
-                // }
-    
                 // chunk culling is broken
-                // chunk.cullFaceTexture(this)
                 this.chunks.push(chunk)
                 index++
             }
         }
 
+        for(let i = 0; i < this.chunkVolume; i++) {
+            this.chunks[i].cullFaceTexture(this)
+        }
     }
 
     /**

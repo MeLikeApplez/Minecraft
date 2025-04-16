@@ -1,19 +1,12 @@
 import Blocks from "../Geometry/Blocks"
 import Block from "../Geometry/Block"
-import Vector3 from "../Math/Vector3"
-import Scene from "../Scene"
+import Vector3 from "../../DistortionGL/Math/Vector3"
+import Scene from "../../DistortionGL/Scenes/Scene"
+import WorldScene from '../Scenes/WorldScene'
 
-/**
- * @typedef {Object} ChunkType
- * @property {number} _transformIndexOffset
- * @property {Uint16Array} _transformData
- * @property {WebGLBuffer} _transformBuffer
- */
+import GameObject from "../../DistortionGL/Core/GameObject"
 
-/**
- * @type {ChunkType}
- */
-export default class Chunk {
+export default class Chunk extends GameObject {
     static WIDTH = 16
     static HEIGHT = 16
     static LENGTH = 16
@@ -21,12 +14,16 @@ export default class Chunk {
 
     static _transformRowSize = 15
     static _transformStride = this._transformRowSize * Uint8Array.BYTES_PER_ELEMENT
-    
-    /**
-     * @param {number} x 
-     * @param {number} z
-     */
-    constructor(x, z) {
+
+    position: Vector3
+    blockIds: Uint8Array
+    ready: boolean
+    _transformData: Uint8Array
+    _transformBuffer: WebGLBuffer | null
+    _sceneIndex: number
+
+    constructor(x: number, z: number) {
+        super()
         this.position = new Vector3(x, 0, z)
 
         this.blockIds = new Uint8Array(Array(Chunk.VOLUME).fill(1))
@@ -44,23 +41,13 @@ export default class Chunk {
         
     }
 
-    /**
-     * @param {number} index
-     * @returns {Block?} 
-     */
-    getBlockByIndex(index) {
+    getBlockByIndex(index: number): Block | null {
         if(index < 0 || index >= this.blockIds.length) return null
 
         return Blocks.LIST[this.blockIds[index]]
     }
 
-    /**
-     * @param {number} x 
-     * @param {number} y 
-     * @param {number} z 
-     * @returns {Block?}
-     */
-    getBlockByPosition(x, y, z) {
+    getBlockByPosition(x: number, y: number, z: number): Block | null {
         const index = this.getIndexByPosition(x, y, z)
 
         if(index < 0 || index >= this.blockIds.length) return null
@@ -68,23 +55,13 @@ export default class Chunk {
         return Blocks.LIST[this.blockIds[index]]
     }
 
-    /**
-     * @param {number} x 
-     * @param {number} y 
-     * @param {number} z 
-     * @returns {number | -1}
-     */
-    getIndexByPosition(x, y, z) {
+    getIndexByPosition(x: number, y: number, z: number): number | -1 {
         const index = z * (Chunk.WIDTH * Chunk.HEIGHT) + y * Chunk.WIDTH + x
 
         return (index < 0 || index >= this.blockIds.length) ? -1 : index
     }
 
-    /**
-     * @param {number} index 
-     * @returns {Vector3?}
-     */
-    getPositionByIndex(index) {
+    getPositionByIndex(index: number): Vector3 | null {
         if(index < 0 || index >= this.blockIds.length) return null
 
         return new Vector3(
@@ -109,10 +86,7 @@ export default class Chunk {
         }
     }
 
-    /**
-     * @param {Scene} scene 
-     */
-    cullFaceTexture(scene) {
+    cullFaceTexture(scene: WorldScene) {
         const { px, nx, pz, nz } = scene.getNeighboringChunks(this.position)
 
         let index = 0
@@ -120,24 +94,27 @@ export default class Chunk {
             for(let x = 0; x < Chunk.WIDTH; x++) {
                 if(px) {
                     index = this.getIndexByPosition(Chunk.LENGTH - 1, y, x)
-
-                    if(px.getBlockByPosition(0, y, x).type === Block.SOLID) {
+                    const position = px.getBlockByPosition(0, y, x)
+                    
+                    if(position && (position.type === Block.States.SOLID)) {
                         this._transformData[index * Chunk._transformRowSize + 3] |= Block.TEXTURE_HIDE_BUFFER_BIT
                     }
                 }
 
                 if(nx) {
                     index = this.getIndexByPosition(0, y, x)
-
-                    if(nx.getBlockByPosition(Chunk.LENGTH - 1, y, x).type === Block.SOLID) {
+                    const position = nx.getBlockByPosition(Chunk.LENGTH - 1, y, x)
+                    
+                    if(position && (position.type === Block.States.SOLID)) {
                         this._transformData[index * Chunk._transformRowSize + 5] |= Block.TEXTURE_HIDE_BUFFER_BIT
                     }
                 }
 
                 if(pz) {
                     index = this.getIndexByPosition(x, y, Chunk.WIDTH - 1)
-
-                    if(pz.getBlockByPosition(x, y, 0).type === Block.SOLID) {
+                    const position = pz.getBlockByPosition(x, y, 0)
+                    
+                    if(position && (position.type === Block.States.SOLID)) {
                         this._transformData[index * Chunk._transformRowSize + 11] |= Block.TEXTURE_HIDE_BUFFER_BIT
                     }
                     
@@ -145,8 +122,9 @@ export default class Chunk {
 
                 if(nz) {
                     index = this.getIndexByPosition(x, y, 0)
+                    const position = nz.getBlockByPosition(x, y, Chunk.WIDTH - 1)
                     
-                    if(nz.getBlockByPosition(x, y, Chunk.WIDTH - 1).type === Block.SOLID) {
+                    if(position && (position.type === Block.States.SOLID)) {
                         this._transformData[index * Chunk._transformRowSize + 13] |= Block.TEXTURE_HIDE_BUFFER_BIT
                     }
 
@@ -155,11 +133,7 @@ export default class Chunk {
         }
     }
 
-    /**
-     * @param {WebGL2RenderingContext} gl 
-     * @param {WebGLProgram} program 
-     */
-    update(gl, program) {
+    update(gl: WebGL2RenderingContext, program: WebGLProgram) {
         if(this._transformBuffer === null) {
             this._transformBuffer = gl.createBuffer()
         }
@@ -197,12 +171,7 @@ export default class Chunk {
         gl.bufferData(gl.ARRAY_BUFFER, this._transformData, gl.STATIC_DRAW)
     }
 
-    /**
-     * @param {WebGL2RenderingContext} gl 
-     * @param {WebGLProgram} program 
-     * @param {number} drawMode 
-     */
-    render(gl, program, drawMode) {
+    render(gl: WebGL2RenderingContext, program: WebGLProgram, drawMode: number) {
         if(!this.ready) throw Error('Chunk is not ready loading!')
 
         const chunkOffsetLocation = gl.getUniformLocation(program, 'chunkOffset')
