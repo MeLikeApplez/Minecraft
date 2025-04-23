@@ -10,6 +10,7 @@ export type Uniforms = {
 
 export type Attributes = {
     vertexData: number
+    blockData: number
     blockOffset: number
     vertexTexCoords: number
     faceTextureNZ: number

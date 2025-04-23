@@ -21,18 +21,31 @@ export default function main(canvas: HTMLCanvasElement) {
     })
 
     renderer.setSize(window.innerWidth, window.innerHeight, window.devicePixelRatio)
+    scene.chunkWidth = 2
+    scene.chunkLength = 2
+    scene.chunkVolume = scene.chunkWidth * scene.chunkLength
 
     console.log(renderer)
     console.log(scene)
 
-    camera.position.set(10, 20, 25)
-
+    camera.position.set(100, 40, 100)
+    // camera.position.set(4, 1.5, 5)
+    // camera.lookAt(new Vector3(0.5, 0.5, 0.5))
     scene.generateSimplexNoiseChunks({
         seed: 'seed',
-        width: 4, length: 4, // width = length must be set!
-        amplitude: 3,
+        area: 9 ** 2,
+        amplitude: 4,
         frequency: 0.03
     })
+
+    let totalBytes = 0
+    for(let i = 0; i < scene.chunks.length; i++) {
+        const chunk = scene.chunks[i]
+
+        totalBytes += chunk.blockIds.byteLength
+    }
+
+    console.log(`Total Scene Chunk Memory: ${(totalBytes / 1e+3).toFixed(2)} KB`)
 
     renderer.loadScene(scene)
 
@@ -87,15 +100,13 @@ export default function main(canvas: HTMLCanvasElement) {
     
             if(drag.x !== 0) {
                 camera.rotation.y += drag.x
-    
-                camera.updateProjectionMatrix()
             }
     
-            if(drag.y !== 0 && (Math.abs(camera.rotation.x - drag.y) < HALF_PI)) {
+            if(drag.y !== 0 && (Math.abs(camera.rotation.x + drag.y) < HALF_PI)) {
                 camera.rotation.x += drag.y
-    
-                camera.updateProjectionMatrix()
             }
+
+            camera.updateProjectionMatrix()
 
             lastDrag.copy(pointer.drag)
         } else {
@@ -111,5 +122,5 @@ export default function main(canvas: HTMLCanvasElement) {
         renderer.render()
     }
 
-
+    return gameLoop
 }

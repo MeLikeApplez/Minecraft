@@ -18,6 +18,7 @@ BasicShaders.uniforms = {
 
 BasicShaders.attributes =  {
     vertexData: -1,
+    blockData: -1,
     blockOffset: -1,
     vertexTexCoords: -1,
     faceTextureNZ: -1,

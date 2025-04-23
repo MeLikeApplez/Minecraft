@@ -13,6 +13,15 @@ type BlockStates = {
     ENTITY: 4
 }
 
+type ExcludeAxisTypes = {
+    px: boolean
+    nx: boolean
+    py: boolean
+    ny: boolean
+    pz: boolean
+    nz: boolean
+}
+
 export default class Block {
     static States: BlockStates = {
         SOLID: 0,
@@ -95,6 +104,20 @@ export default class Block {
         0b101110,
     ])
 
+    // binary scheme
+    // 0000 0000
+    // 0000 0XYZ
+    static FACE_VERTEX = new Int8Array([
+        // bottom
+        0b000000,
+        0b000001,
+        0b000100,
+
+        0b000001,
+        0b000101,
+        0b000100,
+    ])
+
     name: string
     type: typeof Block.States[keyof BlockStates]
     texturePosition: Array<number>
@@ -107,9 +130,8 @@ export default class Block {
 
         // z-axis is flipped from traditional 3d graphs due to how project is calculated
         // right(+x) -> left(-x) -> top(+y) -> bottom(-y) ->  front(+z) -> back(-z)
-        // 0000 0000 => 00HN NNNN
-        // H => show(0) / hide(1) texture
-        // N => texture position
+        // 0000 0000 => 000T TTTT
+        // T => texture position
         this.texturePosition = texturePosition.length === 2 ? extendArray(texturePosition, 6) as Array<number> : texturePosition
     }
 
@@ -131,6 +153,79 @@ export default class Block {
         } 
 
         return uv
+    }
+
+    cullFaceTriangles(chunk: Chunk, idIndex: number, excludeAxis?: ExcludeAxisTypes) {
+        const position = chunk.getPositionByIndex(idIndex)
+
+        if(position === null) return null
+
+        const positionData = BigInt(position.z << Chunk.MAX_BIT_HEIGHT + Chunk.MAX_BIT_WIDTH | position.y << Chunk.MAX_BIT_WIDTH | position.x) << 16n
+
+        // ZZZZ YYYY YYYY XXXX 000N NNVV VVVU UUUU
+        const faces: Array<number> = []
+
+        const pxIndex = idIndex + 1
+        const px = chunk.getPositionByIndex(pxIndex)
+        if(!excludeAxis?.px && !(px !== null && position.y === px.y && position.z === px.z && Blocks.LIST[chunk.blockIds[pxIndex]].type === Block.States.SOLID)) {
+            const textureData = BigInt((this.texturePosition[1] << 5) | this.texturePosition[0])
+
+            faces.push(
+                Number(positionData | textureData)
+            )
+        }
+
+        const nxIndex = idIndex - 1
+        const nx = chunk.getPositionByIndex(nxIndex)
+        if(!excludeAxis?.nx && !(nx !== null && position.y === nx.y && position.z === nx.z && Blocks.LIST[chunk.blockIds[nxIndex]].type === Block.States.SOLID)) {
+            const textureData = BigInt(1024 | this.texturePosition[3] << 5 | this.texturePosition[2])
+            
+            faces.push(
+                Number(positionData | textureData)
+            )
+        }
+
+        const pyIndex = idIndex + Chunk.WIDTH
+        const py = chunk.getPositionByIndex(pyIndex)
+        if(!excludeAxis?.py && !(py !== null && position.x === py.x && position.z === py.z && Blocks.LIST[chunk.blockIds[pyIndex]].type === Block.States.SOLID)) {
+            const textureData = BigInt(2048 | this.texturePosition[5] << 5 | this.texturePosition[4])
+            
+            faces.push(
+                Number(positionData | textureData)
+            )
+        }
+
+        const nyIndex = idIndex - Chunk.WIDTH
+        const ny = chunk.getPositionByIndex(nyIndex)
+        if(!excludeAxis?.ny && !(ny !== null && position.x === ny.x && position.z === ny.z && Blocks.LIST[chunk.blockIds[nyIndex]].type === Block.States.SOLID)) {
+            const textureData = BigInt(3072 | this.texturePosition[7] << 5 | this.texturePosition[6])
+            
+            faces.push(
+                Number(positionData | textureData)
+            )
+        }
+        
+        const pzIndex = idIndex - (Chunk.WIDTH * Chunk.HEIGHT)
+        const pz = chunk.getPositionByIndex(pzIndex)
+        if(!excludeAxis?.pz && !(pz !== null && position.x === pz.x && position.y === pz.y && Blocks.LIST[chunk.blockIds[pzIndex]].type === Block.States.SOLID)) {
+            const textureData = BigInt(4096 | this.texturePosition[9] << 5 | this.texturePosition[8])
+            
+            faces.push(
+                Number(positionData | textureData)
+            )
+        }
+
+        const nzIndex = idIndex + (Chunk.WIDTH * Chunk.HEIGHT)
+        const nz = chunk.getPositionByIndex(nzIndex)
+        if(!excludeAxis?.nz && !(nz !== null && position.x === nz.x && position.y === nz.y && Blocks.LIST[chunk.blockIds[nzIndex]].type === Block.States.SOLID)) {
+            const textureData = BigInt(5120 | this.texturePosition[11] << 5 | this.texturePosition[10])
+            
+            faces.push(
+                Number(positionData | textureData)
+            )
+        }
+
+        return faces
     }
 
     cullFaceTexture(chunk: Chunk, idIndex: number) {

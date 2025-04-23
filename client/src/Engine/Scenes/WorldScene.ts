@@ -19,8 +19,7 @@ const shaderList = {
 
 type SimplexNoiseParams = {
     seed?: string,
-    width: number,
-    length: number,
+    area: number,
     amplitude: number,
     frequency: number,
 }
@@ -95,24 +94,19 @@ export default class WorldScene extends Scene {
             this._textureAtlasImgBuffer = gl.createTexture()
             this._blockBuffer = gl.createBuffer()
 
-            // set buffers
             gl.bindBuffer(gl.ARRAY_BUFFER, this._textureAtlasVertexBuffer)
             gl.bufferData(gl.ARRAY_BUFFER, Block.ATLAS_VERTICES, gl.STATIC_DRAW)
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this._blockBuffer)
-            gl.bufferData(gl.ARRAY_BUFFER, Block.VERTICES, gl.STATIC_DRAW)
-
-            // set textures
+            
             this._textureAtlasImg.src = Block.ATLAS_PATH
             this._textureAtlasImg.onload = () => this.loadTextures.bind(this)(renderer)
 
+            gl.bindTexture(gl.TEXTURE_2D, this._textureAtlasImgBuffer)
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, Block.MISSING_TEXTURE_COLOR)
+            
             // render block vertices
             gl.bindBuffer(gl.ARRAY_BUFFER, this._blockBuffer)
-
-            // gl.vertexAttribIPointer() - https://stackoverflow.com/a/18926905/13159492
-            gl.vertexAttribIPointer(this.currentShader.attributes.vertexData, 1, gl.BYTE, 0, 0)
-            gl.enableVertexAttribArray(this.currentShader.attributes.vertexData)
-
+            gl.bufferData(gl.ARRAY_BUFFER, Block.FACE_VERTEX, gl.STATIC_DRAW)
+            
             this.ready = true
         }
 
@@ -123,6 +117,7 @@ export default class WorldScene extends Scene {
         gl.depthMask(true)
         gl.depthFunc(gl.LESS)
         gl.cullFace(gl.FRONT)
+        // gl.cullFace(gl.BACK)
     }
 
     loadBlockVertices(renderer: WebGL2Renderer) {
@@ -153,6 +148,7 @@ export default class WorldScene extends Scene {
 
         const { attributes, uniforms } = this.currentShader
 
+        // set uniforms
         gl.uniform1f(uniforms.atlasCropWidth, Block.ATLAS_WIDTH / Block.ATLAS_BLOCK_SIZE)
         gl.uniform1f(uniforms.atlasCropHeight, Block.ATLAS_HEIGHT / Block.ATLAS_BLOCK_SIZE)
         
@@ -162,14 +158,16 @@ export default class WorldScene extends Scene {
         gl.enableVertexAttribArray(attributes.vertexTexCoords)
 
         // load texture img buffer
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
 
         gl.bindTexture(gl.TEXTURE_2D, this._textureAtlasImgBuffer)
 
         // texture filter
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-        
+
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._textureAtlasImg)
         
         gl.generateMipmap(gl.TEXTURE_2D)
@@ -179,66 +177,67 @@ export default class WorldScene extends Scene {
 
     }
 
-    getNeighboringChunks(worldSpacePosition: Vector3) {
+    getNeighboringChunks(chunk: Chunk) {
         let px = null
         let nx = null
         let pz = null
         let nz = null
-        let index = -1
-
-        const chunkX = Math.round(worldSpacePosition.x / Chunk.WIDTH)
-        const chunkZ = Math.round(worldSpacePosition.z / Chunk.LENGTH)
-
-        if(chunkX < this.chunkWidth && chunkZ < this.chunkLength) {
-            index = chunkZ * this.chunkLength + chunkX
-        } else {
-            return { px, nx, pz, nz }
-        }
+        let index = chunk._sceneIndex
 
         const pxChunkIndex = index + 1
         const nxChunkIndex = index - 1
-        const pzChunkIndex = index + this.chunkLength
-        const nzChunkIndex = index - this.chunkLength
+        const pzChunkIndex = index + this.chunkWidth
+        const nzChunkIndex = index - this.chunkWidth
         
-        const pxChunkZ = Math.floor(pxChunkIndex / this.chunkLength)
-        const nxChunkZ = Math.floor(nxChunkIndex / this.chunkLength)
-        const pzChunkX = pzChunkIndex % this.chunkWidth
-        const nzChunkX = nzChunkIndex % this.chunkWidth
-
-        const pxIsInBounds = (pxChunkIndex >= 0) && (pxChunkIndex < this.chunkVolume) && (chunkZ === pxChunkZ)
-        const nxIsInBounds = (nxChunkIndex >= 0) && (nxChunkIndex < this.chunkVolume) && (chunkZ === nxChunkZ)
-        const pzIsInBounds = (pzChunkIndex >= 0) && (pzChunkIndex < this.chunkVolume) && (chunkX === pzChunkX)
-        const nzIsInBounds = (nzChunkIndex >= 0) && (nzChunkIndex < this.chunkVolume) && (chunkX === nzChunkX)
-
-        if(pxIsInBounds) {
-            px = this.chunks[pxChunkIndex]    
-        }
-        
-        if(nxIsInBounds) {
-            nx = this.chunks[nxChunkIndex]    
+        if((pxChunkIndex >= 0) && (pxChunkIndex < this.chunkVolume)) {
+            const pxChunk = this.chunks[pxChunkIndex]
+            
+            if(pxChunk.position.z === chunk.position.z) {
+                px = pxChunk
+            }
         }
 
-        if(pzIsInBounds) {
-            pz = this.chunks[pzChunkIndex]    
+        if((nxChunkIndex >= 0) && (nxChunkIndex < this.chunkVolume)) {
+            const nxChunk = this.chunks[nxChunkIndex]
+            
+            if(nxChunk.position.z === chunk.position.z) {
+                nx = nxChunk
+            }
         }
 
-        if(nzIsInBounds) {
-            nz = this.chunks[nzChunkIndex]    
+        if((pzChunkIndex >= 0) && (pzChunkIndex < this.chunkVolume)) {
+            const pzChunk = this.chunks[pzChunkIndex]
+            
+            if(pzChunk.position.x === chunk.position.x) {
+                pz = pzChunk
+            }
+        }
+
+        if((nzChunkIndex >= 0) && (nzChunkIndex < this.chunkVolume)) {
+            const nzChunk = this.chunks[nzChunkIndex]
+            
+            if(nzChunk.position.x  === chunk.position.x) {
+                nz = nzChunk
+            }
         }
 
         return { px, nx, pz, nz }
     }
 
-    generateSimplexNoiseChunks({ seed, width, length, amplitude, frequency }: SimplexNoiseParams) {
-        this.chunkWidth = width
-        this.chunkLength = length
-        this.chunkVolume = width * length
+    generateSimplexNoiseChunks({ seed, area, amplitude, frequency }: SimplexNoiseParams) {
+        const root = Math.sqrt(area)
+
+        if(Math.floor(root) !== root || Math.floor(area) !== area) throw Error('Area must be a square number!')
+
+        this.chunkWidth = root
+        this.chunkLength = this.chunkWidth
+        this.chunkVolume = area
 
         seed = typeof seed !== 'string' ? Math.floor(Math.random() * 4294967297 - 2147483648).toString() : seed
 
         let index = 0
-        for(let z = 0; z < length; z++) {
-            for(let x = 0; x < width; x++) {
+        for(let z = 0; z < this.chunkLength; z++) {
+            for(let x = 0; x < this.chunkWidth; x++) {
                 const offsetX = x * Chunk.WIDTH
                 const offsetZ = z * Chunk.LENGTH
                 
@@ -247,45 +246,19 @@ export default class WorldScene extends Scene {
                 ChunkGenerator.GenerateSimplexNoise(seed, chunk, offsetX, offsetZ, amplitude, frequency)
 
                 chunk._sceneIndex = index
-                chunk.create()
     
-                // chunk culling is broken
                 this.chunks.push(chunk)
-                index++
-            }
-        }
-
-        for(let i = 0; i < this.chunkVolume; i++) {
-            this.chunks[i].cullFaceTexture(this)
-        }
-    }
-
-    generateFilledChunks(width: number, length: number) {
-        this.chunkWidth = width
-        this.chunkLength = length
-        this.chunkVolume = width * length
-
-        for(let i = 0; i < this.chunks.length; i++) {
-            this.chunks[i].dispose()
-        }
-
-        let index = 0
-        for(let z = 0; z < length; z++) {
-            for(let x = 0; x < width; x++) {
-                const chunk = new Chunk(x * Chunk.WIDTH, z * Chunk.LENGTH)
-
-                chunk._sceneIndex = index
-                chunk.cullFaceTexture(this)
-
-                this.chunks.push(chunk)
-
                 index++
             }
         }
     }
 
     render(renderer: WebGL2Renderer) {
-        if(!this.ready) return
+        if(!this.ready) {
+            console.count('not ready')
+
+            return
+        }
         const { gl } = renderer
         const { program, uniforms } = this.currentShader
         const glDrawMode = this.wireframe ? gl.LINE_STRIP : gl.TRIANGLES
@@ -300,9 +273,9 @@ export default class WorldScene extends Scene {
             const chunk = this.chunks[i]
 
             if(chunk.ready) {
-                chunk.render(gl, this.currentShader.program, glDrawMode)
+                chunk.render(gl, this.currentShader, glDrawMode)
             } else {
-                chunk.update(gl, this.currentShader.program)
+                chunk.update(gl, this)
                 chunk.ready = true
             }
         }

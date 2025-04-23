@@ -15,5 +15,22 @@ canvas.gl {
     width: 100%;
     height: 100%;
 
+    background-color: black;
+
     touch-action: none;
+}
+
+.debug-overlay {
+    width: 100%;
+    height: 100%;
+
+    position: fixed;
+    inset: 0;
+
+    pointer-events: none;
+    touch-action: none;
+
+    font-family: monospace;
+    font-size: 1.5em;
+    color: white;
 }

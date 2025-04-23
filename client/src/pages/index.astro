@@ -15,10 +15,24 @@ import './index.scss'
 			import main from '../components/main.ts'
 		
 			const canvas = document.querySelector('canvas.gl') as HTMLCanvasElement
-			
-			if(canvas.getContext('webgl2') === null) throw Error('WebGL2 is unable. Your browser or machine may not support it.')
 
-			main(canvas)
+			if(canvas.getContext('webgl2') === null) throw Error('WebGL2 is unable. Your browser or machine may not support it.')
+			const fpsOverlay = document.querySelector('.fps') as HTMLDivElement
+			let intervalId = -1
+
+			const gameLoop = main(canvas)
+
+			clearInterval(intervalId)
+
+			fpsOverlay.innerText = `${gameLoop.fps.toFixed(0)} FPS`
+
+			intervalId = setInterval(() => {
+				fpsOverlay.innerText = `${gameLoop.fps.toFixed(0)} FPS`
+			}, 1000)
 		</script>
+
+		<div class="debug-overlay">
+			<div class="fps"></div>
+		</div>
 	</body>
 </html>

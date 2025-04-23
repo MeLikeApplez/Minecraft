@@ -12,12 +12,12 @@ export default class Texture2D {
         0, 0,
         0, 1,
         1, 0,
-    
+
         0, 1,
         1, 1,
         1, 0,
     ])
-    
+
     static async loadImage(src: string) {
         const img = new Image()
 
