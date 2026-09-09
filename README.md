@@ -21,7 +21,7 @@ Clone the project
 Go to the project directory
 
 ```bash
-  cd ./Minecraft/client
+  cd ./client
 ```
 
 Install dependencies
