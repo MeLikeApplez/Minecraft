@@ -9,8 +9,9 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^7.2.10",
-    "distortiongl": "^0.4.4",
-    "sass": "^1.97.3"
+    "astro": "^7.4.0",
+    "sass": "^1.97.3",
+    "webgpu-utils": "^2.1.1",
+    "wgpu-matrix": "^3.4.2"
   }
 }
